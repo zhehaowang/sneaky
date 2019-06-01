@@ -3,7 +3,8 @@ class StockxProduct(object):
         product = product_json['Product']
         self.product_id = product['id']
         self.title = product['title']
-        self.retail_price = product['retailPrice']
+        if 'retailPrice' in product:
+            self.retail_price = product['retailPrice']
         self.style_id = product['styleId']
         self.brand = product['brand']
         self.image = product['media']['imageUrl']

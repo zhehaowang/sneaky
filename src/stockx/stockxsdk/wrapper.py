@@ -145,13 +145,21 @@ class Stockx():
         return [StockxOrder('ask', order) for order in self.__get_activity(product_id, 400)]
 
     def get_lowest_ask(self, product_id):
-        return self.get_asks(product_id)[0]
+        res = self.get_asks(product_id)
+        if len(res) > 0:
+            return res[0]
+        else:
+            return None
     
     def get_bids(self, product_id):
         return [StockxOrder('bid', order) for order in self.__get_activity(product_id, 300)]
 
     def get_highest_bid(self, product_id):
-        return self.get_bids(product_id)[0]
+        res = self.get_bids(product_id)
+        if len(res) > 0:
+            return res[0]
+        else:
+            return None
 
     def create_ask(self, product_id, price, expiry_date=None):
         expiry_date = expiry_date or now_plus_thirty()

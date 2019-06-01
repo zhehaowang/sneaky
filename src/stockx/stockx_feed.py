@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import pprint
+import datetime
 
 from stockxsdk import Stockx
 
@@ -19,22 +20,26 @@ class StockXFeed():
             raise RuntimeError("failed to log in as {}".format(usrname))
 
     def get_details(self, product_id):
+        """
+        @param product_id rfc 4122 uuid string
+        @return book string. See build_book
+        """
         # product_id = stockx.get_first_product_id('BB1234')
         product = self.stockx.get_product(product_id)
         print("product title: {}".format(product.title))
 
-        highest_bid = self.stockx.get_highest_bid(product_id)
-        print("size: {}, best bid: {}".format(highest_bid.shoe_size, highest_bid.order_price))
+        # highest_bid = self.stockx.get_highest_bid(product_id)
+        # print("size: {}, best bid: {}".format(highest_bid.shoe_size, highest_bid.order_price))
 
-        lowest_ask = self.stockx.get_lowest_ask(product_id)
-        print("size: {}, best ask: {}".format(lowest_ask.shoe_size, lowest_ask.order_price))
+        # lowest_ask = self.stockx.get_lowest_ask(product_id)
+        # print("size: {}, best ask: {}".format(lowest_ask.shoe_size, lowest_ask.order_price))
 
         asks = self.stockx.get_asks(product_id)
         bids = self.stockx.get_bids(product_id)
         
         book = StockXFeed.build_book(product, bids, asks)
-        StockXFeed.print_book(product, book)
-        return
+        bookstr = StockXFeed.serialize_book(product, book)
+        return bookstr
 
     @staticmethod
     def is_better(px1, px2, side):
@@ -94,33 +99,53 @@ class StockXFeed():
         return sizes
 
     @staticmethod
-    def print_book(product, book):
+    def serialize_book(product, book):
+        res_str = ""
         for shoe_size in book:
-            print('---- {} : {} ----'.format(product.title, shoe_size))
-            print('---- Bid ----  ---- Ask ----')
+            res_str += '---- {} : {} ----\n'.format(product.title, shoe_size)
+            res_str += '---- Bid ----  ---- Ask ----\n'
             for level in book[shoe_size]['ask'][::-1]:
-                print("               {:.2f} {}".format(level["px"], level["size"]))
+                res_str += "               {:.2f} {}\n".format(level["px"], level["size"])
             for level in book[shoe_size]['bid']:
-                print("{:6d} {:.2f}".format(level["size"], level["px"]))
-            print('----------------------------')
+                res_str += "{:6d} {:.2f}\n".format(level["size"], level["px"])
+            res_str += ('----------------------------\n')
             if len(book[shoe_size]["bid"]) > 0 and len(book[shoe_size]["ask"]) > 0:
-                print('Spread: {:.2f}. Mid: {:.2f}'.format(book[shoe_size]["ask"][0]["px"] - book[shoe_size]["bid"][0]["px"], (book[shoe_size]["ask"][0]["px"] + book[shoe_size]["bid"][0]["px"]) / 2))
+                res_str += ('Spread: {:.2f}. Mid: {:.2f}\n'.format(book[shoe_size]["ask"][0]["px"] - book[shoe_size]["bid"][0]["px"], (book[shoe_size]["ask"][0]["px"] + book[shoe_size]["bid"][0]["px"]) / 2))
             else:
-                print('One side is empty')
-            print()
+                res_str += ('One side is empty\n')
+            res_str += '\n'
+        return res_str
 
     def search(self, query):
         results = self.stockx.search(query)
-        for item in results:
+        # for item in results:
             # pp.pprint(item)
-            print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
-        return
+            # print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
+        return results
 
 if __name__ == "__main__":
     stockx_feed = StockXFeed()
-    with open("../credentials/credentials.json", "r") as cred_file:
+    with open("../../credentials/credentials.json", "r") as cred_file:
         cred = json.loads(cred_file.read())["stockx"]
         stockx_feed.authenticate(cred["username"], cred["password"])
-        stockx_feed.get_details('2c91a3dc-4ba6-40bc-af0b-a259f793a223')
+        # stockx_feed.get_details('2c91a3dc-4ba6-40bc-af0b-a259f793a223')
 
-        # stockx_feed.search('air jordan')
+        results = stockx_feed.search('air jordan 4')
+        items_map = []
+        for item in results:
+            if 'objectID' in item:
+                bookstr = stockx_feed.get_details(item['objectID'])
+                book_filename = "../../data/stockx/" + item['name'] + '-' + datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S") + '.txt'
+                with open(book_filename, 'w') as wfile:
+                    wfile.write(bookstr)
+                if 'sales_last_72' in item and item['sales_last_72']:
+                    items_map.append({
+                        'book': book_filename,
+                        'sales_last_72': int(item['sales_last_72']),
+                        'name': item['name'],
+                        'last_price': -1 if not 'last_sale' in item else float(item['last_sale'])
+                    })
+
+        items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
+        pp.pprint(items_map)
+
