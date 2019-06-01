@@ -7,10 +7,12 @@ import pprint
 
 from stockxsdk import Stockx
 
+pp = pprint.PrettyPrinter(indent=2)
+		
 class StockXFeed():
 	def __init__(self):
 		self.stockx = Stockx()
-		return 
+		return
 
 	def authenticate(self, usrname, pwd):
 		if not self.stockx.authenticate(usrname, pwd):
@@ -28,21 +30,91 @@ class StockXFeed():
 		print("size: {}, best ask: {}".format(lowest_ask.shoe_size, lowest_ask.order_price))
 
 		asks = self.stockx.get_asks(product_id)
-		print(len(asks))
-		for ask in asks:
-			print(ask)
-
 		bids = self.stockx.get_bids(product_id)
-		for bid in bids:
-			print(bid)
+		
+		book = StockXFeed.build_book(product, bids, asks)
+		StockXFeed.print_book(product, book)
+		return
+
+	@staticmethod
+	def is_better(px1, px2, side):
+		if side == 'bid':
+			return px1 > px2
+		elif side == 'ask':
+			return px1 < px2
+		else:
+			raise RuntimeError('unknown side {}'.format(side))
+		return
+
+	@staticmethod
+	def build_book(product, bids, asks):
+		"""Given a product and bids and asks of all shoe sizes, for each shoe
+		size construct a book.
+
+		@param product stockxsdk.product
+		@param bids    [stockxsdk.order]
+		@param asks    [stockxsdk.order]
+
+		@return {"9": {"bid": [{"px": 20, "size": 1, "orders": ...},
+							   {"px": 19, "size": 2, "orders": ...}]},
+					   "ask": [{"px": 21, "size": 1, "orders": ...},
+							   {"px": 22, "size": 1, "orders": ...}]}},
+			     "8": ...}
+		"""
+		sizes = {}
+
+		def init_level(order):
+			return {"px": order.order_price, "size": int(order.num_orders), "orders": [order]}
+
+		def build_half(sizes, orders):
+			for order in orders:
+				if not order.shoe_size in sizes:
+					sizes[order.shoe_size] = {"bid": [], "ask": []}
+					sizes[order.shoe_size][order.order_type].append(init_level(order))
+				else:
+					half = sizes[order.shoe_size][order.order_type]
+					level_idx = 0
+					while level_idx < len(half):
+						if order.order_price == half[level_idx]["px"]:
+							half[level_idx]["orders"].append(order)
+							half[level_idx]["size"] += int(order.num_orders)
+							break
+						elif StockXFeed.is_better(order.order_price, half[level_idx]["px"], order.order_type):
+							half.insert(level_idx, init_level(order))
+							break
+						level_idx += 1
+
+					if level_idx == len(half):
+						half.append(init_level(order))
+
+		build_half(sizes, bids)
+		build_half(sizes, asks)
+
+		# pp.pprint(sizes)
+		return sizes
+
+	@staticmethod
+	def print_book(product, book):
+		for shoe_size in book:
+			print('---- {} : {} ----'.format(product.title, shoe_size))
+			print('---- Bid ----  ---- Ask ----')
+			for level in book[shoe_size]['ask'][::-1]:
+				print("               {:.2f} {}".format(level["px"], level["size"]))
+			for level in book[shoe_size]['bid']:
+				print("{:6d} {:.2f}".format(level["size"], level["px"]))
+			print('----------------------------')
+			if len(book[shoe_size]["bid"]) > 0 and len(book[shoe_size]["ask"]) > 0:
+				print('Spread: {:.2f}. Mid: {:.2f}'.format(book[shoe_size]["ask"][0]["px"] - book[shoe_size]["bid"][0]["px"], (book[shoe_size]["ask"][0]["px"] + book[shoe_size]["bid"][0]["px"]) / 2))
+			else:
+				print('One side is empty')
+			print()
 
 	def search(self, query):
 		results = self.stockx.search(query)
-		pp = pprint.PrettyPrinter(indent=2)
 		for item in results:
-			pp.pprint(item)
-			# print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n  release date {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72'], item['Release Date']['value']))
-
+			# pp.pprint(item)
+			print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
+		return
 
 if __name__ == "__main__":
 	stockx_feed = StockXFeed()

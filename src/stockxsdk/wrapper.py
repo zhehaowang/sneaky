@@ -142,7 +142,7 @@ class Stockx():
         return self.__get(command)
 
     def get_asks(self, product_id):
-        return [StockxOrder('bid', order) for order in self.__get_activity(product_id, 400)]
+        return [StockxOrder('ask', order) for order in self.__get_activity(product_id, 400)]
 
     def get_lowest_ask(self, product_id):
         return self.get_asks(product_id)[0]
