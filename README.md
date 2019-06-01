@@ -1,6 +1,6 @@
 # shoes-feed
 
-Feed data gathering on flea markets for shoes
+Feed data gathering on flea markets for shoes.
 
 ### stockx
 
@@ -8,7 +8,10 @@ Feed data gathering on flea markets for shoes
 
 https://pypi.org/project/stockx-py-sdk/
 
-Customization in header to evade bot check.
+Customizations
+* Requests user-agent header to evade bot check
+* Orders serialization
+* Order type typo correction
 
 ##### what to expect
 
@@ -50,3 +53,11 @@ Spread: 88.00. Mid: 214.00
 ----------------------------
 Spread: 59.00. Mid: 164.50
 ```
+
+### flightclub
+
+### ebay
+
+### amazon
+
+
