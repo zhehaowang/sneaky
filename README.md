@@ -8,4 +8,5 @@ Feed data gathering on flea markets for shoes
 
 https://pypi.org/project/stockx-py-sdk/
 
+Customization in header to evade bot check.
 
