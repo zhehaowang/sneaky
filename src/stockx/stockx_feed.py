@@ -135,7 +135,7 @@ if __name__ == "__main__":
         for item in results:
             if 'objectID' in item:
                 bookstr = stockx_feed.get_details(item['objectID'])
-                book_filename = "../../data/stockx/" + item['name'] + '-' + datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S") + '.txt'
+                book_filename = "../../data/stockx/" + item['name'] + '-' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
                 with open(book_filename, 'w') as wfile:
                     wfile.write(bookstr)
                 if 'sales_last_72' in item and item['sales_last_72']:
