@@ -1,0 +1,341 @@
+{
+    "Jordan 4 Retro Bred 2019 receipt": {
+        "9.5": {
+            "ask": [
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-308497-060-BRAND-NEW/352678050410?hash=item521d3ffa6a%3Am%3AmXFe6x67AHxAwYjd3sVlcBw&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 99.5,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-308497-060/173913185929?hash=item287e089e89%3Am%3AmGZ8VI7DjSZkr4ElGUP9rfA&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 124.95,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/HOT-SALE-LIMITED-Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-308497-060/392299599437?hash=item5b56e0d64d%3Am%3Amg3Vqg_gKPAiHpoNlj4dniw&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 125.5,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-IV-Bred-Retro-OG-Size-9-5/392306657651?hash=item5b574c8973%3Ag%3A7uEAAOSwLW9c82is&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 177.5,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/NEW-Worn-Once-2019-NIKE-AIR-JORDAN-4-RETRO-BRED-SIZE-9-5/273874885250?hash=item3fc4371a82%3Ag%3AAUcAAOSwBlBc9YmV&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 220.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Bred-2019-Size-9-5/192941612290?hash=item2cec375d02%3Ag%3A98IAAOSwDm1c9qYo&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 240.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-6-Retro-Black-Infrared-VI-OG-Bred-White-Carmine-DB/254128859728?hash=item3b2b42aa50%3Am%3Amcoh8EK1cG1SP2kz40R8lsg&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 244.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Bred-2019-Mens-Size-9-5/173924358025?hash=item287eb31789%3Ag%3AjD8AAOSwyy1c7qSE&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/NIKE-AIR-JORDAN-13-RETRO-BRED-BRAND-NEW-SIZE-9-5-W-RECEIPT-FROM-FOOTLOCKER/254252946081?hash=item3b32a812a1%3Ag%3A-WoAAOSwd25c7JIi&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/air-jordan-retro-4-bred-2019/153488094606?hash=item23bc9a758e%3Ag%3APHcAAOSwh21c2gow&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/air-jordan-4-og-bred-2019-Size-Us-9-5/173924555220?hash=item287eb619d4%3Ag%3AkqIAAOSwMsVc04Ez&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 250.0,
+                    "size": 4
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Mens-Size-9-5-BRED-Nike-Air-2019-With-Footlocker-Receipt/223541284121?hash=item340c194d19%3Ag%3ANa0AAOSw6Zhc9xkx&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/MENS-Air-Jordan-Retro-4-Bred-Black-Red-PRE-ORDER-GS-FREE-SHIP-BY-DHL-4-7DAYS/312601922298?hash=item48c886cafa%3Am%3AmoBh7OcqNMKA4-6-ec2zg4Q&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 254.99,
+                    "size": 2
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-Size-9-5/254252018774?epid=15031702319&hash=item3b3299ec56%3Ag%3A4eYAAOSwLhFc9Hpn&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 255.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-OG-Bred-2019-308497-060-Black-Red-Grey-Mens-Basketball-Shoes/123768175737?hash=item1cd1287c79%3Am%3Am54Knue1qZe7x_A-METj-CQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 256.49,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Mens-Size-9-5-BRED-Nike-Air-2019-With-GOAT-Verification/223544568978?hash=item340c4b6c92%3Ag%3AM20AAOSwe3dc-ueO&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 257.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-Bred-Black-Cement-2019-308497-060-Mens-Size-9-5/113752788132?hash=item1a7c31cca4%3Ag%3AzFYAAOSwpqlc3r3h&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 259.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-IV-Bred-2019-Release-AJ4-NEW-SZ-9-10/163724751406?hash=item261ec1722e%3Am%3AmTj7YuAs5MnII8mrTRncRqQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 259.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Bred-Size-9-5/264315107585?hash=item3d8a687901%3Ag%3AQCEAAOSwmThc00GW&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 260.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-OG-BRED-2019/113737343441?hash=item1a7b4621d1%3Ag%3AGjYAAOSw%7EdVczhR-&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 265.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-4-BRED-2019/312579017075?hash=item48c7294973%3Am%3Am1HxWQOh9mReyDMKCCSFRfQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 269.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Bred-Nike-Air-Jordan-4-Retro-OG-308497-060-Black-Red-White-Mens-DS-All-Sizes/113775449441?hash=item1a7d8b9561%3Am%3AmxwTbBIFicNk1t-PvhrCqgw%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 269.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-IV-4-BRED-2019-Black-Red-Cement-Grey-308497-060-Sz-9-5/153487234501?hash=item23bc8d55c5%3Ag%3ASF8AAOSwJ85c07uO&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 270.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-IV-Retro-Bred-2019-Black-Cement-Brand-New-Size-9-5/333219144655?hash=item4d9568a3cf%3Ag%3A80EAAOSw4e1c8yzu&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 275.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Bred-2019-Retro-30th-Anniversary-Release-IN-HAND/293050436810?hash=item443b2accca%3Ag%3AeVsAAOSwUyBc5YVC&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 277.77,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-OG-Bred-2019-308497-060-Black-Cement-Mens-Authentic/192939179563?hash=item2cec123e2b%3Am%3AmZEued6aTH1KB4lrHSOgFGg%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 279.95,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-Retro-Bred-Black-Cement-Red-Men-s-Size-9-5-DS-In-Hand/323819931261?hash=item4b652c067d%3Ag%3Abj4AAOSwep5c7dR6&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 279.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-Retro-OG-BRED-Black-Red-Cement-Grey-Mens-GS-Size/372664506512?hash=item56c4891890%3Ag%3ATnYAAOSwcqtczckR&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/2019-NIKE-AIR-JORDAN-4-RETRO-BRED-OG/323822921831?hash=item4b6559a867%3Ag%3AbYYAAOSwWcRc8mts&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 280.0,
+                    "size": 2
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-IV-4-BRED-2019-Black-Red-Cement-Grey-308497-060-Sz-4y-15/333164335319?hash=item4d922450d7%3Am%3AmBkNCV2ooBdwx24CSxgPpwg&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 289.9,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/WITH-RECEIPT-Nike-Air-Jordan-4-Retro-Bred-OG-2019-308497-060/293060722430?hash=item443bc7befe%3Am%3AmlfAWkb9mtnOMpq_mV8Vpxw&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 289.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Black-Cement-Bred-2019-Retro-Guaranteed-Authentic-308497-060/264299797410?epid=0&hash=item3d897edba2%3Am%3AmjhbLvevUvH99odjYGH9w_A&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-IV-4-Bred-2019-Black-Fire-Red-308497-060-Brand-New-DS/173919698784?epid=15031702319&hash=item287e6bff60%3Am%3AmLO95-TAER_r1YPiwRj9aBQ%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 294.99,
+                    "size": 2
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-NIKE-AIR-JORDAN-4-RETRO-BRED-OG-308497-060-BLACK-RED-MEN-Size-9-5/192908943051?hash=item2cea44decb%3Ag%3A-3wAAOSwyxhc0Fu4&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 295.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-NIKE-AIR-JORDAN-4-RETRO-BRED-OG-308497-060-BLACK-RED-GS-MEN-Size-4Y-15/223489254981?hash=item3408ff6645%3Am%3AmXMybi3BBLHFQvY2Oxrp0VQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 299.9,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-BRED-308497-060-Black-Fire-Red-GS-Mens-W-Receipt/173889462489?hash=item287c9ea0d9%3Am%3AmDdzZ1kG_X1pW5mnxIhumsg%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 299.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/GUARANTEED-2019-Nike-Air-Jordan-Retro-4-Bred-Size-4y-14-100-AUTHENTIC-NEW/173881132482?hash=item287c1f85c2%3Am%3AmClYEoWQZL_efQIvCEFOszw&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 309.95,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/NEW-2019-AIR-JORDAN-4-RETRO-OG-BRED-BLACK-CEMENT-GREY-WHITE-FIRE-RED-308497-060/143226290797?hash=item2158f3c26d%3Am%3Am82FiUI1LiTP3VjLmw54TfA&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 319.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Bred-2019-Size-9-5/173924905281?epid=1712535246&hash=item287ebb7141%3Ag%3ADvMAAOSwlhpc-KZ1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 320.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-IV-Retro-OG-Bred-3c-14-Black-Cement-Red-308497-060/323797112570?hash=item4b63cfd6fa%3Am%3AmAJ_DTeFFSmjYrBweC2wLGQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 329.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/DS-Air-Jordan-Retro-11-72-10-Sz-9-5-W-Receipt-378038-002-Bred-SpaceJam-Concord/113697010411?hash=item1a78deb2eb%3Ag%3ASJsAAOSw5IJWd2PM&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 399.99,
+                    "size": 1
+                }
+            ]
+        }
+    }
+}

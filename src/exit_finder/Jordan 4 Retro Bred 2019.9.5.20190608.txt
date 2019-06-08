@@ -1,0 +1,146 @@
+{
+    "Jordan 4 Retro Bred 2019": {
+        "9.5": {
+            "ask": [
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/HOT-SALE-LIMITED-Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-308497-060/392299599437?_trkparms=ispr%3D1&hash=item5b56e0d64d%3Am%3Amg3Vqg_gKPAiHpoNlj4dniw&enc=AQADAAAB4KX%2FKt4E1xf3SDqEdBclaYYnB7RP2h5RIfLSXXyPjEVPiidQEYxkBRND%2BBzVEpgP%2BJtx27o5n%2F7OPpJJAnTdKqClWajBrS3hHDtR7MEiS%2Fxuk3Vfk%2BFZVFYrOXffU2ODYu3dQw0wnMRyzjcW%2FQBEgpJI2bS19alvOcDFm8iUWv7kUvhkVx0MvK3DTKLSriBFVRzN6UbqKW4DcD%2BcRC6zTQmR%2FqJatFGtrvy8yd7uU%2BT6PtdJwbsOOL6urj58%2BdJbdfgoHFn6EEPmAIv08D%2BcxJQNaZU4QJTRlobAsP5M5zvXkEArGS9r6HhmBn3z%2B8c0eoSoefJ6vbcfzleSurvPfvz5sYREcOSQhiqNwvlfRhnqzD7nAWaLQaLHbkVZJH8b%2BeYgVAm7FtCvBTrXNNzhndnHxavAVMVbGzEcFOaCdL9uDN0ChNy339%2BuhL%2BOvPlAX5ZGBNnm%2FYSM1074jW94Pg8RyOh%2F5HAMuQlRDWPn6Emw1tBT%2B5Ok7%2FV0jLzKXb4MQD%2FC7ga6prbFFDIqU3PVZffe%2Fkl147OslAoz5ilfphouTGHxAjeOS%2FQs0%2FOCWXC7KtNL3c9LbBRbtRRHhCbwVa1eBXAiJaWTo05Euv6VwvEYlFCMWDPcRWltxqp54%2BKZHw%3D%3D&checksum=392299599437c8b055e7d76c4be19c01997b17edeb09&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 125.5,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/NEW-Worn-Once-2019-NIKE-AIR-JORDAN-4-RETRO-BRED-SIZE-9-5/273874885250?hash=item3fc4371a82%3Ag%3AAUcAAOSwBlBc9YmV&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 220.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/air-jordan-retro-4-bred-2019/153488094606?hash=item23bc9a758e%3Ag%3APHcAAOSwh21c2gow&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 250.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-Mens-Size-9-5-BRED-Nike-Air-2019-With-Footlocker-Receipt/223541284121?hash=item340c194d19%3Ag%3ANa0AAOSw6Zhc9xkx&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 254.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Air-Jordan-4-Bred-Retro-IV-OG-Black-Cement-Red-Size-9-5/254252018774?epid=15031702319&hash=item3b3299ec56%3Ag%3A4eYAAOSwLhFc9Hpn&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 255.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Air-Jordan-4-Retro-OG-Bred-2019-308497-060-Black-Red-Grey-Mens-Basketball-Shoes/123768175737?_trkparms=ispr%3D1&hash=item1cd1287c79%3Am%3Am54Knue1qZe7x_A-METj-CQ&enc=AQADAAAB4KX%2FKt4E1xf3SDqEdBclaYYL8QDw15sFNHPlyEZjdpr6wXXY4TEb17hw%2BBwEhijMqnGes6en80tpBJWSMX8F%2Fr2%2FbowpFbDJis2Hk39gpDW27I9FT4k%2FfBYLCF8l%2BQigxeoAXK5TzTKql0fb2r5fuw3I4TwH8O4A%2B8RRPQXA3RBsU4yWHVvqih%2BYQN5Ayfgid0X7N9qyAZnUNPUgeb9a6ElT4a4Ehhemv5YTXNZ1b0SWnpGmR%2B0IHyiIK1FCXiub7HMpr72wbhZKe7w7sDiGLY%2BjsikveWAjHUTkGMRoQrs4ARzSquFVM5uEuZafkfbMDPEafo5mgJAKqk6b%2BDiTffyKOgNZwRoKYZJOHOTjrLH6mOwmvanWa1dEYq%2Frim%2F5xlN4D%2FmolGy29pQdUpaxKHXsn6BxZp3zFKV4m2OFSzY0W7xDm5N58Hx%2FXanfFyd2jReK%2Bg%2BM4FAAnhuoPW8z%2Bxx5PH%2BLWpSAKkeAe6cGKVj2X9IGOV8yEBQ26hQQgV0%2F3J3PEtpspFTCXJe92xYoB%2BopS0d7MIJnS6GqnFthuXfrwMzcQKSL06OlbtpWb2mNSnua47%2BPkRJImUiX%2Fr4zFjImlfh77IxBBIfHqzmO%2F8%2BtCI3D4KB1IGaXiMlAmHkqTQ%3D%3D&checksum=123768175737c8b055e7d76c4be19c01997b17edeb09&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 256.49,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-Bred-Black-Cement-2019-308497-060-Mens-Size-9-5/113752788132?hash=item1a7c31cca4%3Ag%3AzFYAAOSwpqlc3r3h&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 259.0,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-IV-Bred-2019-Release-AJ4-NEW-SZ-9-10/163724751406?_trkparms=ispr%3D1&hash=item261ec1722e%3Am%3AmTj7YuAs5MnII8mrTRncRqQ&enc=AQADAAAB4KX%2FKt4E1xf3SDqEdBclaYYHr28bdPz8GDK2NOfabS8tKZXDY97sskIp1JbcEdnfVlp5vqwX4%2F8SukOTj3aukwK3OVwJRqpAFnR6%2FrHi7Ef39XyeWq%2BEzQJksjsQ8NuSuE7j8mQggX2Uyctdb007UqgQTHCDUgdBoxrmO1oMrYlPXjk%2Bgexv5Eu9fk%2BiDT%2Bhi62%2BEqSIoUNahyD9Yx6Eph43LbkaO66Wi%2FoQFuV8GWGnlj8K3rIjL1tS8y7dDP3xXNFUuSfqpAuW%2BkmEF4S4%2FjOwsz3lw1X%2BypSu%2FnaVBWE%2BWhZcb%2B01AH5v7qacoOG3U9YKPk1pHjuLUYyAkASusYXO%2B4QbBG73l6FMyFMN%2FkSb0eJrVVbjfXt%2FvcqaWY4xix9M4nyV50k%2BtmvX1UydxWpMC0PbnoCVp9scJumK4WUBkvYGe%2Besu2C35rq31PvPj3pSQP%2FCk%2BToVG882t3YbebCtqkZOr5GV6W0yir6p1G%2FhB4azVqtPAPBs2BQnw9zK%2FjUj9tc8CHELqPhCf9g03nolOZAELPp2lnphjMIGa93VhPtx9aIF9%2BzVmpkLHQu%2BhnetiJuccCoTYXN24bA3UGn7Ye1OC6PG6h0k%2B63etNh0xt%2Fga75kB0NtYDK9XrCWA%3D%3D&checksum=163724751406c8b055e7d76c4be19c01997b17edeb09&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 259.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Retro-OG-Bred-2019-308497-060-Black-Cement-Mens-Authentic/192939179563?hash=item2cec123e2b%3Am%3AmZEued6aTH1KB4lrHSOgFGg%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 279.95,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-Retro-Bred-Black-Cement-Red-Men-s-Size-9-5-DS-In-Hand/323819931261?hash=item4b652c067d%3Ag%3Abj4AAOSwep5c7dR6&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 279.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-IV-4-BRED-2019-Black-Red-Cement-Grey-308497-060-Sz-4y-15/333164335319?hash=item4d922450d7%3Am%3AmBkNCV2ooBdwx24CSxgPpwg&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 289.9,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-Retro-IV-4-Bred-2019-Black-Fire-Red-308497-060-Brand-New-DS/173919698784?epid=15031702319&hash=item287e6bff60%3Am%3AmLO95-TAER_r1YPiwRj9aBQ%3Asc%3AUSPSPriority%2107304%21US%21-1&LH_ItemCondition=1000"
+                        },
+                        {
+                            "link": "https://www.ebay.com/itm/Nike-Air-Jordan-4-Black-Cement-Bred-2019-Retro-Guaranteed-Authentic-308497-060/264299797410?epid=0&hash=item3d897edba2%3Am%3AmjhbLvevUvH99odjYGH9w_A&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 294.99,
+                    "size": 2
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-NIKE-AIR-JORDAN-4-RETRO-BRED-OG-308497-060-BLACK-RED-GS-MEN-Size-4Y-15/223489254981?hash=item3408ff6645%3Am%3AmXMybi3BBLHFQvY2Oxrp0VQ&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 299.9,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/NEW-2019-AIR-JORDAN-4-RETRO-OG-BRED-BLACK-CEMENT-GREY-WHITE-FIRE-RED-308497-060/143226290797?_trkparms=ispr%3D1&hash=item2158f3c26d%3Am%3Am82FiUI1LiTP3VjLmw54TfA&enc=AQADAAAB4KX%2FKt4E1xf3SDqEdBclaYYW53fMMak2%2FdM3AtodfBnkutOFiSgyW1YkUDTMn1K%2FbiWWzkIYk6GzVvAmWrjEIHrghAATVHAWDeCmD6JfDfR72XHa5GemMK5ZtTOkl3oFTmPPaCrng7nhx4KbkEK3AR79kIOkzJnFPBeZsUmWXsGyfdaT2nuzfFjKcTaixZCJ%2BEENQSLW2wBoUP9oUlvgblYx7m%2BtD6YjNoXLNt3GsTG0wSwWhnGK8J0%2Bazrt1zDZBGMS7JRgf2H1IFVi9oM5ThvNQXgZwF%2Fucu38ip%2F80N3TsPPzK7gd789BFPDDE4yhIcseG2egdvwIzU6p4qqJmRaGFnyBZXkmBIykJ%2FuoHaRm7JfIl6mmVg%2Brdn2DrGYJcLKjvPqc%2F5JqXH4TQIl6rtbR3ryFVYvy01IOTO%2BYevLX7C43o924L12YOPsDTY7h3nzJ46bnMsf0SkJoSwZ7CP8QMNfopEHG6tOip6avXvARh0eEwGv%2BCnveDlzSVXfXV3PgwtmVoDKztbJJH4ufZkRoOOlXzxepWcZw9GU3341kx238ZaNCcXMV61rJBvwDbHXv1od9EratmTr%2BbOHLGiBJ5M6D1%2BMTbWWpC2UYBRGoJpryWOjYVh4bxUaLr4sLzA%3D%3D&checksum=143226290797c8b055e7d76c4be19c01997b17edeb09&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 319.99,
+                    "size": 1
+                },
+                {
+                    "orders": [
+                        {
+                            "link": "https://www.ebay.com/itm/2019-Nike-Air-Jordan-4-IV-Retro-OG-Bred-3c-14-Black-Cement-Red-308497-060/323797112570?_trkparms=ispr%3D1&hash=item4b63cfd6fa%3Am%3AmAJ_DTeFFSmjYrBweC2wLGQ&enc=AQADAAAB4KX%2FKt4E1xf3SDqEdBclaYYa1trjqvRRenX1mxxZv54S5RAYICZI3l8MVUrmmxrGC3nOokK51ZPPLvgZWyhAQbcqvrZMbla4GFVFO0hs7H2YuBLTXIFQYW7dbeZlMsHBHaHoomHXoeUViK5K%2BVNCbzluq8U3sdQyBeywxsMmhLf3%2FaM1y6SbSqKvziNaXJ1%2BTYCDxEpdkRv%2B%2FXrR0Gt6gaD1PoeknqjufCF0S0Xbg5hK%2FFybDxGpqO8qgEWqsq%2FbJLauZ8ygtRyRZtwx2OesnBCwnGPJdwyvqPSPE5LcFH1QsLWAsY%2BHCMc%2FzkknxE2mQKNJEzZSuqb1BopU7C5EzeJuQ40L31bjjfBwalGj0Us1Vm%2FzPa48xcJVdloe%2BMbzIu9gTwTI85dCgp0Duavu7IM9pZXed2bmD1at%2BhykUKcXJwoqHDAlJLXAjethnWX5kYIElyUWfpPKkhyJe2kZ8aVyV1iUcR3fZyWqoP5zpNYg%2FI%2FdnexOHIqtvzv0SMbUrfRvQtrYN5qcX%2FOVQEoP%2F4g8iMCA5V1YWehBNmQnxBy81a8U7pSS4NXawGFUAPrQN99jQmPsSrv8GuadRCb7Ison0zzpCOZqoO2Pix8CJwwwRtPzTSGegxyJk6pEipN%2BOA%3D%3D&checksum=323797112570c8b055e7d76c4be19c01997b17edeb09&LH_ItemCondition=1000"
+                        }
+                    ],
+                    "px": 329.99,
+                    "size": 1
+                }
+            ]
+        }
+    }
+}
