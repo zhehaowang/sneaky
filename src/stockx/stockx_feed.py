@@ -5,6 +5,7 @@ import sys
 import json
 import pprint
 import datetime
+import argparse
 
 from stockxsdk import Stockx
 
@@ -22,7 +23,7 @@ class StockXFeed():
     def get_details(self, product_id):
         """
         @param product_id rfc 4122 uuid string
-        @return book string. See build_book
+        @return book string. See build_book for book string details
         """
         # product_id = stockx.get_first_product_id('BB1234')
         product = self.stockx.get_product(product_id)
@@ -36,10 +37,20 @@ class StockXFeed():
 
         asks = self.stockx.get_asks(product_id)
         bids = self.stockx.get_bids(product_id)
+
+        # if len(bids) > 0:
+        #     best_bid = bids[-1]
+        # else:
+        #     best_bid = None
+        
+        # if len(asks) > 0:
+        #     best_ask = asks[0]
+        # else:
+        #     best_ask = None
         
         book = StockXFeed.build_book(product, bids, asks)
-        bookstr = StockXFeed.serialize_book(product, book)
-        return bookstr
+        # bookstr = StockXFeed.serialize_book(product.title, book)
+        return book
 
     @staticmethod
     def is_better(px1, px2, side):
@@ -99,10 +110,10 @@ class StockXFeed():
         return sizes
 
     @staticmethod
-    def serialize_book(product, book):
+    def serialize_book(product_title, book):
         res_str = ""
         for shoe_size in book:
-            res_str += '---- {} : {} ----\n'.format(product.title, shoe_size)
+            res_str += '---- {} : {} ----\n'.format(product_title, shoe_size)
             res_str += '---- Bid ----  ---- Ask ----\n'
             for level in book[shoe_size]['ask'][::-1]:
                 res_str += "               {:.2f} {}\n".format(level["px"], level["size"])
@@ -116,6 +127,10 @@ class StockXFeed():
             res_str += '\n'
         return res_str
 
+    @staticmethod
+    def deserialize_book(bookstr):
+        return
+
     def search(self, query):
         results = self.stockx.search(query)
         # for item in results:
@@ -123,29 +138,115 @@ class StockXFeed():
             # print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
         return results
 
+def find_promising(items_map):
+    """Given products sorted by transactions in last 72 hours (more -> less),
+    find promising ones whose spread is larger than commissioned adjusted price.
+
+    """
+    volume_threshold = 100
+    ask_commission_percent = 0.125 # 9.5% commission + 3% payment proc
+    bid_commission_value = 13.95 # 13.95 shipping + 0 authentication fee
+    cut_in_tick = 1 # cut in $1
+    size_filter = ['8.5', '9', '9.5']
+
+    promising = []
+
+    for item in items_map:
+        if item['sales_last_72'] < volume_threshold:
+            return promising
+        # midpx = (item['best_ask'] + item['best_bid']) / 2
+        for want_size in size_filter:
+            if not want_size in item['size_prices']:
+                print("size {} not found in book. sizes: {}".format(want_size, item['size_prices'].keys()))
+            else:
+                size_price = item['size_prices'][want_size]
+                if size_price['best_ask'] == 0 or size_price['best_bid'] == 0:
+                    continue
+                spread = size_price['best_ask'] - size_price['best_bid']
+                margin = spread - (bid_commission_value + size_price['best_ask'] * ask_commission_percent + cut_in_tick * 2)
+                if margin > 0:
+                    res = dict(size_price)
+                    res["size"] = want_size
+                    res["title"] = item["name"]
+                    res["book"] = item["book"]
+                    res["sales_last_72"] = item["sales_last_72"]
+                    res["margin"] = margin
+                    res["margin_percent"] = 
+                    promising.append(res)
+    return promising
+
+
 if __name__ == "__main__":
+    relevant_levels = 30
+
     stockx_feed = StockXFeed()
+    runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    outdir = "../../data/stockx/" + runtime
+    os.mkdir(outdir)
+
+    promising_dirname = os.path.join(outdir, 'promising')
+    os.mkdir(promising_dirname)
+
     with open("../../credentials/credentials.json", "r") as cred_file:
         cred = json.loads(cred_file.read())["stockx"]
         stockx_feed.authenticate(cred["username"], cred["password"])
+        promising_items = []
         # stockx_feed.get_details('2c91a3dc-4ba6-40bc-af0b-a259f793a223')
 
-        results = stockx_feed.search('air jordan 4')
-        items_map = []
-        for item in results:
-            if 'objectID' in item:
-                bookstr = stockx_feed.get_details(item['objectID'])
-                book_filename = "../../data/stockx/" + item['name'] + '-' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '.txt'
-                with open(book_filename, 'w') as wfile:
-                    wfile.write(bookstr)
-                if 'sales_last_72' in item and item['sales_last_72']:
-                    items_map.append({
-                        'book': book_filename,
-                        'sales_last_72': int(item['sales_last_72']),
-                        'name': item['name'],
-                        'last_price': -1 if not 'last_sale' in item else float(item['last_sale'])
-                    })
+        with open("query_kw.txt", "r") as query_file:
+            for line in query_file:
+                print("Querying {}".format(line))
+                results = stockx_feed.search(line)
+                items_map = []
+                for item in results:
+                    if 'objectID' in item:
+                        book = stockx_feed.get_details(item['objectID'])
+                        bookstr = StockXFeed.serialize_book(item['name'], book)
 
-        items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
-        pp.pprint(items_map)
+                        book_filename = os.path.join(outdir, item['name'].replace('/', '-') + '.txt')
+                        with open(book_filename, 'w') as wfile:
+                            wfile.write(bookstr)
+                        if 'sales_last_72' in item and item['sales_last_72']:
+                            items_map.append({
+                                'book': book_filename,
+                                'sales_last_72': int(item['sales_last_72']),
+                                'name': item['name'],
+                                'last_price': -1 if not 'last_sale' in item else float(item['last_sale']),
+                                'size_prices': {}
+                            })
+                            for shoe_size in book:
+                                if len(book[shoe_size]["bid"]) == 0:
+                                    best_bid = 0
+                                else:
+                                    best_bid = book[shoe_size]["bid"][0]["px"]
+                                if len(book[shoe_size]["ask"]) == 0:
+                                    best_ask = 0
+                                else:
+                                    best_ask = book[shoe_size]["ask"][0]["px"]
 
+                                bid_size = 0
+                                ask_size = 0
+                                for level in book[shoe_size]["bid"]:
+                                    if abs(level["px"] - best_bid) < relevant_levels:
+                                        bid_size += level["size"]
+                                for level in book[shoe_size]["ask"]:
+                                    if abs(level["px"] - best_ask) < relevant_levels:
+                                        ask_size += level["size"]
+                                items_map[-1]['size_prices'][shoe_size] = {
+                                    "best_bid": best_bid,
+                                    "best_ask": best_ask,
+                                    "relevant_bid_total_size": bid_size,
+                                    "relevant_ask_total_size": ask_size
+                                }
+
+
+                items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
+                # pp.pprint(items_map)
+                promising_items += find_promising(items_map)
+                print("done")
+
+            with open(os.path.join(promising_dirname, "items.txt"), 'w') as promising_file:
+                promising_file.write(pp.pformat(promising_items))
+                for item in promising_items:
+                    basename = os.path.basename(item['book'])
+                    os.symlink(item['book'], os.path.join(promising_dirname, basename.replace(' ', '-')))

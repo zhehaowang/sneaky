@@ -45,7 +45,10 @@ class Stockx():
             'password': password
         }
         auth_headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+            'Referer': 'https://stockx.com/',
+            'Origin': 'https://stockx.com',
+            'Content-Type': 'text/plain'
         }
         response = requests.post(endpoint, json=payload, headers=auth_headers)
         customer = response.json().get('Customer', None)
@@ -135,6 +138,7 @@ class Stockx():
     def get_product(self, product_id):
         command = '/products/{0}'.format(product_id)
         product_json = self.__get(command)
+        # print(product_json)
         return StockxProduct(product_json)
 
     def __get_activity(self, product_id, activity_type):
