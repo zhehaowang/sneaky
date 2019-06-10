@@ -1,6 +1,8 @@
 import datetime
 import json
 import requests
+import time
+
 from stockxsdk.item import StockxItem
 from stockxsdk.order import StockxOrder
 from stockxsdk.product import StockxProduct
@@ -27,7 +29,16 @@ class Stockx():
             response = requests.post(endpoint, json=data, headers=self.headers)
         elif request_type == 'DELETE':
             response = requests.delete(endpoint, json=data, headers=self.headers)
-        return response.json()
+        if response.status_code == 200:
+            return response.json()
+        elif int(response.status_code) / 100 == 5:
+            # series 5 error, their stuff. We wait a bit.
+            print("response: {}. we wait a bit.".format(response))
+            time.sleep(3)
+            return self.__api_query(request_type, command, data)
+        else:
+            print("response: {}. we give up.".format(response))
+            return {}
 
     def __get(self, command, data=None):
         return self.__api_query('GET', command, data)
@@ -138,7 +149,6 @@ class Stockx():
     def get_product(self, product_id):
         command = '/products/{0}'.format(product_id)
         product_json = self.__get(command)
-        # print(product_json)
         return StockxProduct(product_json)
 
     def __get_activity(self, product_id, activity_type):

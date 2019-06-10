@@ -23,10 +23,13 @@ class StockXFeed():
     def get_details(self, product_id):
         """
         @param product_id rfc 4122 uuid string
-        @return book string. See build_book for book string details
+        @return book string. See build_book for book string details. None if getting the product fails
         """
         # product_id = stockx.get_first_product_id('BB1234')
         product = self.stockx.get_product(product_id)
+        if not hasattr(product, 'title'):
+            print("get details failed for {}".format(product_id))
+            return None
         print("product title: {}".format(product.title))
 
         # highest_bid = self.stockx.get_highest_bid(product_id)
@@ -171,7 +174,7 @@ def find_promising(items_map):
                     res["book"] = item["book"]
                     res["sales_last_72"] = item["sales_last_72"]
                     res["margin"] = margin
-                    res["margin_percent"] = 
+                    res["margin_percent"] = margin / (size_price['best_ask'] + size_price['best_bid']) * 2
                     promising.append(res)
     return promising
 
@@ -187,6 +190,8 @@ if __name__ == "__main__":
     promising_dirname = os.path.join(outdir, 'promising')
     os.mkdir(promising_dirname)
 
+    best_prices = {}
+
     with open("../../credentials/credentials.json", "r") as cred_file:
         cred = json.loads(cred_file.read())["stockx"]
         stockx_feed.authenticate(cred["username"], cred["password"])
@@ -200,48 +205,75 @@ if __name__ == "__main__":
                 items_map = []
                 for item in results:
                     if 'objectID' in item:
-                        book = stockx_feed.get_details(item['objectID'])
-                        bookstr = StockXFeed.serialize_book(item['name'], book)
+                        try:
+                            book = stockx_feed.get_details(item['objectID'])
+                            if not book:
+                                continue
 
-                        book_filename = os.path.join(outdir, item['name'].replace('/', '-') + '.txt')
-                        with open(book_filename, 'w') as wfile:
-                            wfile.write(bookstr)
-                        if 'sales_last_72' in item and item['sales_last_72']:
-                            items_map.append({
-                                'book': book_filename,
-                                'sales_last_72': int(item['sales_last_72']),
-                                'name': item['name'],
-                                'last_price': -1 if not 'last_sale' in item else float(item['last_sale']),
-                                'size_prices': {}
-                            })
-                            for shoe_size in book:
-                                if len(book[shoe_size]["bid"]) == 0:
-                                    best_bid = 0
-                                else:
-                                    best_bid = book[shoe_size]["bid"][0]["px"]
-                                if len(book[shoe_size]["ask"]) == 0:
-                                    best_ask = 0
-                                else:
-                                    best_ask = book[shoe_size]["ask"][0]["px"]
+                            bookstr = StockXFeed.serialize_book(item['name'], book)
 
-                                bid_size = 0
-                                ask_size = 0
-                                for level in book[shoe_size]["bid"]:
-                                    if abs(level["px"] - best_bid) < relevant_levels:
-                                        bid_size += level["size"]
-                                for level in book[shoe_size]["ask"]:
-                                    if abs(level["px"] - best_ask) < relevant_levels:
-                                        ask_size += level["size"]
-                                items_map[-1]['size_prices'][shoe_size] = {
-                                    "best_bid": best_bid,
-                                    "best_ask": best_ask,
-                                    "relevant_bid_total_size": bid_size,
-                                    "relevant_ask_total_size": ask_size
-                                }
+                            book_filename = os.path.join(outdir, item['name'].replace('/', '-') + '.txt')
+                            with open(book_filename, 'w') as wfile:
+                                wfile.write(bookstr)
+                            if 'sales_last_72' in item and item['sales_last_72']:
+                                items_map.append({
+                                    'book': book_filename,
+                                    'sales_last_72': int(item['sales_last_72']),
+                                    'name': item['name'],
+                                    'last_price': -1 if not 'last_sale' in item else float(item['last_sale']),
+                                    'size_prices': {}
+                                })
+                                for shoe_size in book:
+                                    if len(book[shoe_size]["bid"]) == 0:
+                                        best_bid = 0
+                                    else:
+                                        best_bid = book[shoe_size]["bid"][0]["px"]
+                                    if len(book[shoe_size]["ask"]) == 0:
+                                        best_ask = 0
+                                    else:
+                                        best_ask = book[shoe_size]["ask"][0]["px"]
+
+                                    bid_size = 0
+                                    ask_size = 0
+                                    for level in book[shoe_size]["bid"]:
+                                        if abs(level["px"] - best_bid) < relevant_levels:
+                                            bid_size += level["size"]
+                                    for level in book[shoe_size]["ask"]:
+                                        if abs(level["px"] - best_ask) < relevant_levels:
+                                            ask_size += level["size"]
+                                    items_map[-1]['size_prices'][shoe_size] = {
+                                        "best_bid": best_bid,
+                                        "best_ask": best_ask,
+                                        "relevant_bid_total_size": bid_size,
+                                        "relevant_ask_total_size": ask_size
+                                    }
+
+                                    # distilled view
+                                    if item['name'] in best_prices:
+                                        best_prices[item['name']][shoe_size] = {
+                                            "best_bid": best_bid,
+                                            "best_ask": best_ask,
+                                            "sales_last_72": int(item["sales_last_72"]),
+                                            "search_term": line,
+                                            "url": item["url"]
+                                        }
+                                    else:
+                                        best_prices[item['name']] = {
+                                            shoe_size: {
+                                                "best_bid": best_bid,
+                                                "best_ask": best_ask,
+                                                "sales_last_72": int(item["sales_last_72"]),
+                                                "search_term": line,
+                                                "url": item["url"]
+                                        }}
+                        except TypeError as e:
+                            print(e)
+                            print('skipping {}'.format(item['objectID']))
 
 
                 items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
                 # pp.pprint(items_map)
+                # attempt1 : find "promising" shoes with a margin large enough for us to make money as market makers
                 promising_items += find_promising(items_map)
                 print("done")
 
@@ -250,3 +282,7 @@ if __name__ == "__main__":
                 for item in promising_items:
                     basename = os.path.basename(item['book'])
                     os.symlink(item['book'], os.path.join(promising_dirname, basename.replace(' ', '-')))
+
+            with open(os.path.join(promising_dirname, "best_prices.txt"), 'w') as bests_file:
+                bests_file.write(json.dumps(best_prices, indent=4, sort_keys=True))
+
