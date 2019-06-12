@@ -87,6 +87,9 @@ class StockXFeed():
 
         def build_half(sizes, orders):
             for order in orders:
+                if not hasattr(order, 'shoe_size'):
+                    # we had trouble processing this order. Skip it.
+                    continue
                 if not order.shoe_size in sizes:
                     sizes[order.shoe_size] = {"bid": [], "ask": []}
                     sizes[order.shoe_size][order.order_type].append(init_level(order))

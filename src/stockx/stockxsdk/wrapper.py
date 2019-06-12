@@ -67,7 +67,11 @@ class Stockx():
             raise ValueError('Authentication failed, check username/password')
         self.customer_id = response.json()['Customer']['id']
         self.headers = {
-            'JWT-Authorization': response.headers['jwt-authorization']
+            'JWT-Authorization': response.headers['jwt-authorization'],
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+            'Referer': 'https://stockx.com/',
+            'Origin': 'https://stockx.com',
+            'Content-Type': 'text/plain'
         }
         return True
 
