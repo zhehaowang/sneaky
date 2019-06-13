@@ -10,7 +10,8 @@ import argparse
 from stockxsdk import Stockx
 
 pp = pprint.PrettyPrinter(indent=2)
-        
+
+
 class StockXFeed():
     def __init__(self):
         self.stockx = Stockx()
@@ -45,12 +46,12 @@ class StockXFeed():
         #     best_bid = bids[-1]
         # else:
         #     best_bid = None
-        
+
         # if len(asks) > 0:
         #     best_ask = asks[0]
         # else:
         #     best_ask = None
-        
+
         book = StockXFeed.build_book(product, bids, asks)
         # bookstr = StockXFeed.serialize_book(product.title, book)
         return book
@@ -83,16 +84,18 @@ class StockXFeed():
         sizes = {}
 
         def init_level(order):
-            return {"px": order.order_price, "size": int(order.num_orders), "orders": [order]}
+            return {"px": order.order_price, "size": int(
+                order.num_orders), "orders": [order]}
 
         def build_half(sizes, orders):
             for order in orders:
                 if not hasattr(order, 'shoe_size'):
                     # we had trouble processing this order. Skip it.
                     continue
-                if not order.shoe_size in sizes:
+                if order.shoe_size not in sizes:
                     sizes[order.shoe_size] = {"bid": [], "ask": []}
-                    sizes[order.shoe_size][order.order_type].append(init_level(order))
+                    sizes[order.shoe_size][order.order_type].append(
+                        init_level(order))
                 else:
                     half = sizes[order.shoe_size][order.order_type]
                     level_idx = 0
@@ -122,12 +125,20 @@ class StockXFeed():
             res_str += '---- {} : {} ----\n'.format(product_title, shoe_size)
             res_str += '---- Bid ----  ---- Ask ----\n'
             for level in book[shoe_size]['ask'][::-1]:
-                res_str += "               {:.2f} {}\n".format(level["px"], level["size"])
+                res_str += "               {:.2f} {}\n".format(
+                    level["px"], level["size"])
             for level in book[shoe_size]['bid']:
                 res_str += "{:6d} {:.2f}\n".format(level["size"], level["px"])
             res_str += ('----------------------------\n')
-            if len(book[shoe_size]["bid"]) > 0 and len(book[shoe_size]["ask"]) > 0:
-                res_str += ('Spread: {:.2f}. Mid: {:.2f}\n'.format(book[shoe_size]["ask"][0]["px"] - book[shoe_size]["bid"][0]["px"], (book[shoe_size]["ask"][0]["px"] + book[shoe_size]["bid"][0]["px"]) / 2))
+            if len(book[shoe_size]["bid"]) > 0 and len(
+                    book[shoe_size]["ask"]) > 0:
+                res_str += (
+                    'Spread: {:.2f}. Mid: {:.2f}\n'.format(
+                        book[shoe_size]["ask"][0]["px"] -
+                        book[shoe_size]["bid"][0]["px"],
+                        (book[shoe_size]["ask"][0]["px"] +
+                         book[shoe_size]["bid"][0]["px"]) /
+                        2))
             else:
                 res_str += ('One side is empty\n')
             res_str += '\n'
@@ -140,9 +151,10 @@ class StockXFeed():
     def search(self, query):
         results = self.stockx.search(query)
         # for item in results:
-            # pp.pprint(item)
-            # print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
+        # pp.pprint(item)
+        # print("name {}\n  best bid {}\n  best ask {}\n  last sale {}\n  sales last 72 {}\n".format(item['name'], item['highest_bid'], item['lowest_ask'], item['last_sale'], item['sales_last_72']))
         return results
+
 
 def find_promising(items_map):
     """Given products sorted by transactions in last 72 hours (more -> less),
@@ -150,9 +162,9 @@ def find_promising(items_map):
 
     """
     volume_threshold = 100
-    ask_commission_percent = 0.125 # 9.5% commission + 3% payment proc
-    bid_commission_value = 13.95 # 13.95 shipping + 0 authentication fee
-    cut_in_tick = 1 # cut in $1
+    ask_commission_percent = 0.125  # 9.5% commission + 3% payment proc
+    bid_commission_value = 13.95  # 13.95 shipping + 0 authentication fee
+    cut_in_tick = 1  # cut in $1
     size_filter = ['8.5', '9', '9.5']
 
     promising = []
@@ -162,14 +174,17 @@ def find_promising(items_map):
             return promising
         # midpx = (item['best_ask'] + item['best_bid']) / 2
         for want_size in size_filter:
-            if not want_size in item['size_prices']:
-                print("size {} not found in book. sizes: {}".format(want_size, item['size_prices'].keys()))
+            if want_size not in item['size_prices']:
+                print("size {} not found in book. sizes: {}".format(
+                    want_size, item['size_prices'].keys()))
             else:
                 size_price = item['size_prices'][want_size]
                 if size_price['best_ask'] == 0 or size_price['best_bid'] == 0:
                     continue
                 spread = size_price['best_ask'] - size_price['best_bid']
-                margin = spread - (bid_commission_value + size_price['best_ask'] * ask_commission_percent + cut_in_tick * 2)
+                margin = spread - \
+                    (bid_commission_value +
+                     size_price['best_ask'] * ask_commission_percent + cut_in_tick * 2)
                 if margin > 0:
                     res = dict(size_price)
                     res["size"] = want_size
@@ -177,7 +192,8 @@ def find_promising(items_map):
                     res["book"] = item["book"]
                     res["sales_last_72"] = item["sales_last_72"]
                     res["margin"] = margin
-                    res["margin_percent"] = margin / (size_price['best_ask'] + size_price['best_bid']) * 2
+                    res["margin_percent"] = margin / \
+                        (size_price['best_ask'] + size_price['best_bid']) * 2
                     promising.append(res)
     return promising
 
@@ -213,9 +229,11 @@ if __name__ == "__main__":
                             if not book:
                                 continue
 
-                            bookstr = StockXFeed.serialize_book(item['name'], book)
+                            bookstr = StockXFeed.serialize_book(
+                                item['name'], book)
 
-                            book_filename = os.path.join(outdir, item['name'].replace('/', '-') + '.txt')
+                            book_filename = os.path.join(
+                                outdir, item['name'].replace('/', '-') + '.txt')
                             with open(book_filename, 'w') as wfile:
                                 wfile.write(bookstr)
                             if 'sales_last_72' in item and item['sales_last_72']:
@@ -223,7 +241,7 @@ if __name__ == "__main__":
                                     'book': book_filename,
                                     'sales_last_72': int(item['sales_last_72']),
                                     'name': item['name'],
-                                    'last_price': -1 if not 'last_sale' in item else float(item['last_sale']),
+                                    'last_price': -1 if 'last_sale' not in item else float(item['last_sale']),
                                     'size_prices': {}
                                 })
                                 for shoe_size in book:
@@ -239,10 +257,12 @@ if __name__ == "__main__":
                                     bid_size = 0
                                     ask_size = 0
                                     for level in book[shoe_size]["bid"]:
-                                        if abs(level["px"] - best_bid) < relevant_levels:
+                                        if abs(
+                                                level["px"] - best_bid) < relevant_levels:
                                             bid_size += level["size"]
                                     for level in book[shoe_size]["ask"]:
-                                        if abs(level["px"] - best_ask) < relevant_levels:
+                                        if abs(
+                                                level["px"] - best_ask) < relevant_levels:
                                             ask_size += level["size"]
                                     items_map[-1]['size_prices'][shoe_size] = {
                                         "best_bid": best_bid,
@@ -268,15 +288,15 @@ if __name__ == "__main__":
                                                 "sales_last_72": int(item["sales_last_72"]),
                                                 "search_term": line,
                                                 "url": item["url"]
-                                        }}
+                                            }}
                         except TypeError as e:
                             print(e)
                             print('skipping {}'.format(item['objectID']))
 
-
                 items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
                 # pp.pprint(items_map)
-                # attempt1 : find "promising" shoes with a margin large enough for us to make money as market makers
+                # attempt1 : find "promising" shoes with a margin large enough
+                # for us to make money as market makers
                 promising_items += find_promising(items_map)
                 print("done")
 
@@ -284,8 +304,9 @@ if __name__ == "__main__":
                 promising_file.write(pp.pformat(promising_items))
                 for item in promising_items:
                     basename = os.path.basename(item['book'])
-                    os.symlink(item['book'], os.path.join(promising_dirname, basename.replace(' ', '-')))
+                    os.symlink(item['book'], os.path.join(
+                        promising_dirname, basename.replace(' ', '-')))
 
             with open(os.path.join(promising_dirname, "best_prices.txt"), 'w') as bests_file:
-                bests_file.write(json.dumps(best_prices, indent=4, sort_keys=True))
-
+                bests_file.write(json.dumps(
+                    best_prices, indent=4, sort_keys=True))
