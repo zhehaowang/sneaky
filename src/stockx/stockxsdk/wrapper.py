@@ -19,6 +19,64 @@ class Stockx():
     def __init__(self):
         self.customer_id = None
         self.headers = None
+        self.cookies = {
+            "__cfduid": "d872b61c169ed04ad1c8fc249f8d7c3141559356547",
+            "_ga": "GA1.2.144777368.1559356549",
+            "cto_lwid": "9de93bee-bd8b-4507-8e21-795b787f61a9",
+            "_gcl_au": "1.1.1951555545.1559356550",
+            "_tl_duuid": "069a06ef-baee-4032-a7f1-2171bbd61b2d",
+            "tracker_device": "51682130-9b63-414e-be28-25a499a56402",
+            "IR_gbd": "stockx.com",
+            "ajs_group_id": "null",
+            "_fbp": "fb.1.1559356553059.129148643",
+            "rskxRunCookie": "0",
+            "rCookie": "7305g4oqqe449qv5wkc089",
+            "_pxhd": "d844d67f707bc84ebb56a18e99c91b32e871953686b336a39217548c2419eaa5:04c25671-8417-11e9-b057-edcb5fe9ed72",
+            "_scid": "d8f68103-065d-4005-8b2e-4900caf6d42c",
+            "stockx_bid_ask_spread_seen": "true",
+            "stockx_multi_edit_seen": "true",
+            "show_bid_ask_spread": "false",
+            "show_below_retail": "true",
+            "stockx_seen_ask_new_info": "true",
+            "_gac_UA-67038415-1": "1.1560037346.CjwKEAjwue3nBRCCyrqY0c7bw2wSJACSlmGZilf6CAcsMxFJm4ZJY59NWo8_11ZFC6RBA3iad0wFTxoC_GDw_wcB",
+            "_gcl_aw": "GCL.1560037347.CjwKEAjwue3nBRCCyrqY0c7bw2wSJACSlmGZilf6CAcsMxFJm4ZJY59NWo8_11ZFC6RBA3iad0wFTxoC_GDw_wcB",
+            "_gid": "GA1.2.1923016505.1560479845",
+            "_sp_ses.1a3e": "*",
+            "_tl_csid": "f1fc7784-f4e7-480a-90eb-90d586f5c019",
+            "_pk_ref.421.1a3e": "%5B%22%22%2C%22%22%2C1560479846%2C%22https%3A%2F%2Fwww.google.com%2F%22%5D",
+            "_pk_ses.421.1a3e": "*",
+            "_tl_sid": "5d030867c3f05b001998e86f",
+            "stockx_learn_more_dismiss": "true",
+            "_tl_uid": "af8a0b5c-8e50-11e9-8880-12deb909e97c",
+            "ajs_user_id": "%22af8a0b5c-8e50-11e9-8880-12deb909e97c%22",
+            "ajs_anonymous_id": "%225e3f9509-0670-4884-80b8-8e2956e58436%22",
+            "_tl_auid": "5d030e026679d4001b34e540",
+            "_sctr": "1|1560398400000",
+            "stockx_session": "eak00l8jwvje6mk1560483178508",
+            "_pk_id.421.1a3e": "0102423b573ff79c.1559356551.12.1560483189.1560479845.",
+            "tl_sopts_f1fc7784-f4e7-480a-90eb-90d586f5c019_p_p_n": "JTJGbG9naW4",
+            "tl_sopts_f1fc7784-f4e7-480a-90eb-90d586f5c019_p_p_l_h": "aHR0cHMlM0ElMkYlMkZzdG9ja3guY29tJTJGbG9naW4",
+            "tl_sopts_f1fc7784-f4e7-480a-90eb-90d586f5c019_p_p_l_t": "U3RvY2tYJTNBJTIwQnV5JTIwYW5kJTIwU2VsbCUyMFNuZWFrZXJzJTJDJTIwU3RyZWV0d2VhciUyQyUyMEhhbmRiYWdzJTJDJTIwV2F0Y2hlcw",
+            "tl_sopts_f1fc7784-f4e7-480a-90eb-90d586f5c019_p_p_l": "JTdCJTIyaHJlZiUyMiUzQSUyMmh0dHBzJTNBJTJGJTJGc3RvY2t4LmNvbSUyRmxvZ2luJTIyJTJDJTIyaGFzaCUyMiUzQSUyMiUyMiUyQyUyMnNlYXJjaCUyMiUzQSUyMiUyMiUyQyUyMmhvc3QlMjIlM0ElMjJzdG9ja3guY29tJTIyJTJDJTIycHJvdG9jb2wlMjIlM0ElMjJodHRwcyUzQSUyMiUyQyUyMnBhdGhuYW1lJTIyJTNBJTIyJTJGbG9naW4lMjIlMkMlMjJ0aXRsZSUyMiUzQSUyMlN0b2NrWCUzQSUyMEJ1eSUyMGFuZCUyMFNlbGwlMjBTbmVha2VycyUyQyUyMFN0cmVldHdlYXIlMkMlMjBIYW5kYmFncyUyQyUyMFdhdGNoZXMlMjIlN0Q",
+            "tl_sopts_f1fc7784-f4e7-480a-90eb-90d586f5c019_p_p_v_d": "MjAxOS0wNi0xNFQwMyUzQTMzJTNBMDkuMzUwWg",
+            "is_gdpr": "false",
+            "stockx_selected_currency": "USD",
+            "stockx_selected_locale": "en_US",
+            "IR_9060": "1560483189837%7C0%7C1560479847095%7C%7C",
+            "IR_PI": "e9ea8dde-4f7d-11e9-a97b-12cd5acec8a1%7C1560569589837",
+            "show_all_as_number": "false",
+            "brand_tiles_version": "v1",
+            "show_bid_education": "v2",
+            "show_bid_education_times": "1",
+            "mobile_nav_v2": "true",
+            "multi_edit_option": "beatLowestAskBy",
+            "product_page_v2": "watches%2Chandbags",
+            "show_watch_modal": "true",
+            "_derived_epik": "dj0yJnU9OWZ3LTcxWEszd3JwSUY3Z240N29jTjRaSDdGN08yNjUmbj1VLWlGazFDNEVLSGdxQms1SVVhMVBnJm09MSZ0PUFBQUFBRjBERlhZ",
+            "lastRskxRun": "1560483190713",
+            "cookie_policy_accepted": "true",
+            "_sp_id.1a3e": "1e9c87cf-e416-485c-8050-e01d906c916d.1559356549.13.1560483239.1560314848.12cf1098-a164-4265-b160-e40fc0c40bfa",
+        }
 
     def __api_query(self, request_type, command, data=None):
         endpoint = self.API_BASE + command
@@ -61,19 +119,23 @@ class Stockx():
             'Origin': 'https://stockx.com',
             'Content-Type': 'text/plain'
         }
-        response = requests.post(endpoint, json=payload, headers=auth_headers)
-        customer = response.json().get('Customer', None)
-        if customer is None:
-            raise ValueError('Authentication failed, check username/password')
-        self.customer_id = response.json()['Customer']['id']
-        self.headers = {
-            'JWT-Authorization': response.headers['jwt-authorization'],
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
-            'Referer': 'https://stockx.com/',
-            'Origin': 'https://stockx.com',
-            'Content-Type': 'text/plain'
-        }
-        return True
+        response = requests.post(endpoint, json=payload, headers=auth_headers, cookies=self.cookies)
+        if response.status_code == 200:
+            customer = response.json().get('Customer', None)
+            if customer is None:
+                raise ValueError('Authentication failed, check username/password')
+            self.customer_id = response.json()['Customer']['id']
+            self.headers = {
+                'JWT-Authorization': response.headers['jwt-authorization'],
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
+                'Referer': 'https://stockx.com/',
+                'Origin': 'https://stockx.com',
+                'Content-Type': 'text/plain'
+            }
+            return True
+        else:
+            print("auth failed {} {}".format(response.status_code, response.text))
+            return False
 
     def me(self):
         command = '/users/me'

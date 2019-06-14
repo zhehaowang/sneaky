@@ -6,11 +6,13 @@ import json
 import pprint
 import datetime
 import argparse
+import time
 
 from stockxsdk import Stockx
 
 pp = pprint.PrettyPrinter(indent=2)
 
+SLEEP_TIME = 60
 
 class StockXFeed():
     def __init__(self):
@@ -18,6 +20,8 @@ class StockXFeed():
         return
 
     def authenticate(self, usrname, pwd):
+        self.usrname = usrname
+        self.pwd = pwd
         if not self.stockx.authenticate(usrname, pwd):
             raise RuntimeError("failed to log in as {}".format(usrname))
 
@@ -29,8 +33,13 @@ class StockXFeed():
         # product_id = stockx.get_first_product_id('BB1234')
         product = self.stockx.get_product(product_id)
         if not hasattr(product, 'title'):
-            print("get details failed for {}".format(product_id))
-            return None
+            print(("get details failed for {}. presumably we need to throttle "
+                   "and re-auth. sleeping {}s").format(product_id, SLEEP_TIME))
+            time.sleep(SLEEP_TIME)
+            self.authenticate(self.usrname, self.pwd)
+            self.get_details(product_id)
+            return
+
         print("product title: {}".format(product.title))
 
         # highest_bid = self.stockx.get_highest_bid(product_id)
@@ -201,7 +210,6 @@ def find_promising(items_map):
 if __name__ == "__main__":
     relevant_levels = 30
 
-    stockx_feed = StockXFeed()
     runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     outdir = "../../data/stockx/" + runtime
     os.mkdir(outdir)
@@ -212,14 +220,25 @@ if __name__ == "__main__":
     best_prices = {}
 
     with open("../../credentials/credentials.json", "r") as cred_file:
-        cred = json.loads(cred_file.read())["stockx"]
-        stockx_feed.authenticate(cred["username"], cred["password"])
-        promising_items = []
-        # stockx_feed.get_details('2c91a3dc-4ba6-40bc-af0b-a259f793a223')
 
-        with open("query_kw.txt", "r") as query_file:
+        cred = json.loads(cred_file.read())["stockx"]
+        cred_cnt = len(cred)
+        cred_idx = 0
+        promising_items = []
+
+        with open("query_kw.txt", "r") as query_file, open(os.path.join(promising_dirname, "best_prices.txt"), 'w') as bests_file:
             for line in query_file:
-                print("Querying {}".format(line))
+                line = line.strip()
+                if not line:
+                    continue
+                stockx_feed = StockXFeed()
+                stockx_feed.authenticate(
+                    cred[cred_idx]["username"],
+                    cred[cred_idx]["password"])
+                print("Querying \"{}\" using account {}".format(
+                    line, cred[cred_idx]["username"]))
+                cred_idx = (cred_idx + 1) % cred_cnt
+
                 results = stockx_feed.search(line)
                 items_map = []
                 for item in results:
@@ -272,26 +291,48 @@ if __name__ == "__main__":
                                     }
 
                                     # distilled view
-                                    if item['name'] in best_prices:
-                                        best_prices[item['name']][shoe_size] = {
-                                            "best_bid": best_bid,
-                                            "best_ask": best_ask,
-                                            "sales_last_72": int(item["sales_last_72"]),
-                                            "search_term": line,
-                                            "url": item["url"]
-                                        }
-                                    else:
-                                        best_prices[item['name']] = {
-                                            shoe_size: {
+                                    if 'style_id' in item:
+                                        item_key = item['style_id']
+                                        if item_key in best_prices:
+                                            best_prices[item_key][shoe_size] = {
                                                 "best_bid": best_bid,
                                                 "best_ask": best_ask,
                                                 "sales_last_72": int(item["sales_last_72"]),
                                                 "search_term": line,
-                                                "url": item["url"]
-                                            }}
+                                                "url": item["url"],
+                                                "name": item["name"],
+                                                "style_id": item["style_id"]
+                                            }
+                                        else:
+                                            best_prices[item_key] = {
+                                                shoe_size: {
+                                                    "best_bid": best_bid,
+                                                    "best_ask": best_ask,
+                                                    "sales_last_72": int(item["sales_last_72"]),
+                                                    "search_term": line,
+                                                    "url": item["url"],
+                                                    "name": item["name"],
+                                                    "style_id": item["style_id"]
+                                                }}
+                                        bests_file.write(
+                                            "{},{},{},{},{},{},\"{}\"".format(
+                                                item["name"],
+                                                item["url"],
+                                                item["style_id"],
+                                                best_bid,
+                                                best_ask,
+                                                int(item["sales_last_72"]),
+                                                line))
+                                    else:
+                                        print('style_id not in {}'.format(
+                                            item["name"]))
+
                         except TypeError as e:
                             print(e)
                             print('skipping {}'.format(item['objectID']))
+
+                print("voluntary throttle")
+                time.sleep(SLEEP_TIME)
 
                 items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
                 # pp.pprint(items_map)
@@ -307,6 +348,3 @@ if __name__ == "__main__":
                     os.symlink(item['book'], os.path.join(
                         promising_dirname, basename.replace(' ', '-')))
 
-            with open(os.path.join(promising_dirname, "best_prices.txt"), 'w') as bests_file:
-                bests_file.write(json.dumps(
-                    best_prices, indent=4, sort_keys=True))
