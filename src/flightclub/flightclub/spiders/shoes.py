@@ -52,6 +52,17 @@ class ShoesSpider(scrapy.Spider):
         price_elems = selector.xpath("//span[contains(@id, 'current-price')]/span/text()").getall()
         brand_elems = selector.xpath("//h2[@itemprop='brand']/text()").getall()
         name_elems = selector.xpath("//h1[@itemprop='name']/text()").getall()
+        style_id_elems = selector.xpath("//li[@class='attribute-list-item']/text()").getall()
+
+        style_id = ""
+        release_date = ""
+        color = ""
+        if len(style_id_elems) > 0:
+            style_id = style_id_elems[0].strip().lower()
+        if len(style_id_elems) > 1:
+            color = style_id_elems[1].strip().lower()
+        if len(style_id_elems) > 2:
+            release_date = style_id_elems[2].strip().lower()
         
         px = None
         if len(price_elems) == 1:
@@ -63,10 +74,22 @@ class ShoesSpider(scrapy.Spider):
                 elif px != elem.strip().strip('$'):
                     print('cannot determine px for {}'.format(url))
 
-        if len(brand_elems) > 0 and len(name_elems) > 0 and px:
-            shoe_full_name = brand_elems[0].strip() + ' -- ' + name_elems[0].strip() + ' -- ' + str(shoe_size)
-            self.prices[shoe_full_name] = {"px": px, "url": url}
-            print(shoe_full_name, px)
+        if len(brand_elems) > 0 and len(name_elems) > 0 and px and style_id:
+            shoe_name = name_elems[0].strip()
+            if not style_id in self.prices:
+                self.prices[style_id] = {}
+                
+            self.prices[style_id][shoe_size] = {
+                "px": px,
+                "url": url,
+                "name": shoe_name,
+                "release_date": release_date,
+                "size": shoe_size,
+                "color": color
+            }
+            print(shoe_name, shoe_size, px, style_id, color, release_date)
+        else:
+            print("unable to find brand / name / style / px {}".format(url))
 
     def closed(self, reason):
         with open("flightclub.{}.txt".format(datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
