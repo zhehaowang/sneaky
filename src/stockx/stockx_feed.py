@@ -12,7 +12,8 @@ from stockxsdk import Stockx
 
 pp = pprint.PrettyPrinter(indent=2)
 
-SLEEP_TIME = 60
+SLEEP_TIME = 120
+PER_PAGE_SLEEP_TIME = 1
 
 class StockXFeed():
     def __init__(self):
@@ -23,7 +24,8 @@ class StockXFeed():
         self.usrname = usrname
         self.pwd = pwd
         if not self.stockx.authenticate(usrname, pwd):
-            raise RuntimeError("failed to log in as {}".format(usrname))
+            time.sleep(SLEEP_TIME)
+            self.authenticate(usrname, pwd)
 
     def get_details(self, product_id):
         """
@@ -326,12 +328,14 @@ if __name__ == "__main__":
                                     else:
                                         print('style_id not in {}'.format(
                                             item["name"]))
+                            time.sleep(PER_PAGE_SLEEP_TIME)
 
                         except TypeError as e:
                             print(e)
                             print('skipping {}'.format(item['objectID']))
 
-                print("voluntary throttle")
+                print("voluntary throttle, flush to file")
+                bests_file.flush()
                 time.sleep(SLEEP_TIME)
 
                 items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
