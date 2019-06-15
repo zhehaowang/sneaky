@@ -19,6 +19,10 @@ PER_QUERY_SLEEP_TIME = 120
 def sanitize_key(key):
     return key.lower().replace('-', '').replace(' ', '')
 
+def sanitize_filename(key):
+    return key.replace(
+        '(', '-').replace(')', '-').replace(' ', '-').replace('/', '-')
+
 class StockXFeed():
     def __init__(self):
         self.stockx = Stockx()
@@ -297,10 +301,10 @@ if __name__ == "__main__":
                                 transactions_json)
 
                             book_filename = os.path.join(
-                                outdir, style_id + '.txt')
+                                outdir, sanitize_filename(style_id + '.txt'))
                             transactions_filename = os.path.join(
-                                outdir, (style_id + '.transaction.txt').replace(
-                                    '(', '-').replace(')', '-'))
+                                outdir, sanitize_filename(
+                                    style_id + '.transaction.txt'))
 
                             with open(book_filename, 'w') as wfile, open(transactions_filename, 'w') as tfile:
                                 wfile.write(bookstr)

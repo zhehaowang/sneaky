@@ -5,9 +5,18 @@ import re
 import sys
 import json
 import csv
+import pytz
 
 import pprint
 import datetime
+
+import argparse
+
+# Import smtplib for the actual sending function
+import smtplib
+
+# Import the email modules we'll need
+from email.mime.text import MIMEText
 
 pp = pprint.PrettyPrinter()
 
@@ -42,7 +51,7 @@ def read_files(fc_file, stockx_file):
             style_id = row[2]
             name = row[0]
             url = 'https://stockx.com/' + row[1]
-            shoe_size = row[3]
+            shoe_size = sanitize_size(row[3])
             best_bid = float(row[4])
             best_ask = float(row[5])
             sx_volume_last_72 = int(row[6])
@@ -97,7 +106,7 @@ def match_items(fc_prices, sx_prices):
                     sx_item = sx_prices[style_id][sx_size]
                     if not style_id in matches:
                         matches[style_id] = {
-                            size: {
+                            sx_size: {
                                 "fc": fc_item,
                                 "sx": sx_item
                             }}
@@ -120,6 +129,16 @@ def find_margin(matches):
                              "sx_xxx": ...,
                              "fc_yyy": ...}}
     """
+    # us to china 
+    # du_shipping_fee = 20
+    # du_commission_rate = 0.095
+
+    # china to us
+    # du_batch_size = 3
+    
+    # du_batch_fee = 106
+    # 90 - 5kg + 16 / kg
+
     sx_threshold = 50
     sx_bid_commission = 13.95
     fc_commission_rate = 0.2
@@ -149,10 +168,11 @@ def find_margin(matches):
 
                     fc_url_with_size = item['fc']['url'] + '?size=' + size
                     match_item = {
-                        # 'style_id': style_id,
-                        'shoe_size': size,
+                        'style_id': style_id,
+                        'name': item['sx']['name'],
+                        'shoe_size': sanitize_size(size),
 
-                        'fc_px': item['fc']['px'],
+                        'fc_px': float(item['fc']['px'].replace(',', '')),
                         'fc_url': fc_url_with_size,
 
                         'sx_best_bid': item['sx']['best_bid'],
@@ -195,25 +215,191 @@ def annotate_transaction_history(sx_prices, data_prefix="../../data/stockx/"):
 
     return sx_prices
 
+def annotate_score(margins, score_mode):
+    for item in margins:
+        if score_mode == 'naive':
+            score, volume = score_crossing_margin_rate(margins[item])
+        elif score_mode == 'multi':
+            score, volume = score_margin_single_entity_transactions_size(margins[item])
+        margins[item]['score'] = score
+        margins[item]['volume'] = volume
+    return margins
+
+def score_crossing_margin_rate(item):
+    return item['crossing_margin_rate'], 0
+
+def score_margin_single_entity_transactions_size(item):
+    # an item with a high crossing margin rate, how single entity price, high
+    # transaction amounts and closer to norm size scores better
+
+    # we can't really accurately account for transaction rate as some data is 
+    # still being scraped. when we don't have such data we use the this table
+    # as approximation
+
+    size_discount_multiplier = {
+        '3.5':  0.40,
+        '4':    0.50,
+        '4.5':  0.60,
+        '5':    0.70,
+        '5.5':  0.75,
+        '6':    0.80,
+        '6.5':  0.85,
+        '7':    0.90,
+        '7.5':  0.95,
+        '8':    0.98,
+        '8.5':  1.00,
+        '9':    1.00,
+        '9.5':  1.00,
+        '10':   1.00,
+        '10.5': 1.00,
+        '11':   1.00,
+        '11.5': 0.98,
+        '12':   0.95,
+        '12.5': 0.90,
+        '13':   0.85,
+        '13.5': 0.80,
+        '14':   0.75,
+        '14.5': 0.70,
+        '15':   0.70,
+        '16':   0.60,
+        '17':   0.50,
+        '18':   0.40
+    }
+
+    if len(item['sx_transactions']) > 0:
+        duration = datetime.datetime.now(
+            pytz.timezone('America/New_York')) - datetime.datetime.strptime(
+            item['sx_transactions'][-1]['time'], "%Y-%m-%dT%H:%M:%S%z")
+        transaction_rate = len(item['sx_transactions']) * 3600 * 24 // duration.total_seconds()
+    else:
+        if item['shoe_size'] in size_discount_multiplier:
+            transaction_rate = 0.2 * size_discount_multiplier[item['shoe_size']]
+        else:
+            print('unknown size {}'.format(item['shoe_size']))
+            transaction_rate = 0
+
+    price_discount = 1
+    if item['sx_best_ask'] > 1000:
+        price_discount = 0.3
+    elif item['sx_best_ask'] > 500:
+        price_discount = 0.6
+    elif item['sx_best_ask'] > 300:
+        price_discount = 0.9
+
+    return item['crossing_margin_rate'] * transaction_rate * price_discount, transaction_rate
+
+def generate_html_report(score_sorted_item, limit, **run_info):
+    text = ("<html><head></head><body>"
+        "Hi,<br><p>Please see below for a list of candidate shoes.</p>")
+
+    text += ("<table>"
+                "<tr>"
+                    "<th>Name</th>"
+                    "<th>Size</th>"
+                    "<th>StockX</th>"
+                    "<th>FlightClub</th>"
+                    "<th>Crossing Margin</th>"
+                    "<th>Crossing Margin Rate</th>"
+                    "<th>StockX Transaction Rate</th>"
+                    "<th>Score</th>"
+                    "<th>Style ID</th>"
+                "</tr>")
+
+    report_cnt = 0
+    for key in score_sorted_item:
+        shoe = key[1]
+        if shoe["crossing_margin_rate"] > 0 and (not limit or report_cnt < limit):
+            text += ("<tr>"
+                        "<td>{}</td>"
+                        "<td>{}</td>"
+                        "<td>{}</td>"
+                        "<td>{}</td>"
+                        "<td>{:.2f}</td>"
+                        "<td>{:.2f}</td>"
+                        "<td>{:.2f}</td>"
+                        "<td>{:.2f}</td>"
+                        "<td>{}</td>"
+                     "</tr>").format(shoe['name'], shoe['shoe_size'],
+                        "<a href=\"{}\">{:.2f}</a>".format(
+                            shoe['sx_url'], float(shoe['sx_best_ask'])),
+                        "<a href=\"{}\">{:.2f}</a>".format(
+                            shoe['fc_url'], float(shoe['fc_px'])),
+                        shoe['crossing_margin'], shoe['crossing_margin_rate'],
+                        shoe['volume'], shoe['score'], shoe['style_id'])
+            report_cnt += 1
+
+    text += "<table><br><br>{}".format(pp.pformat(run_info))
+    text += "<br><br>Thanks,<br>Sneaky Bot</body></html>"
+
+    return text if report_cnt > 0 else "But didn't find anything :("
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    fc_file = "flightclub.20190614.txt"
+    sx_file = "best_prices.20190614-230824.txt"
+    sx_transactions_folder = "../../data/stockx/20190615-145954/"
+
+    parser.add_argument(
+        "--score_mode",
+        help=("[multi|naive] with what criteria we decide how much we want to "
+             " buy this pair shoes"))
+    parser.add_argument(
+        "--emails",
+        help="comma separated list of email addresses to send report")
+    parser.add_argument(
+        "--limit",
+        help="max number of items to send in one email")
+    parser.add_argument(
+        "--out",
+        help="output file to write to")
+    args = parser.parse_args()
+
     runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    fc_prices, sx_prices = read_files("flightclub.20190614.txt", "best_prices.txt")
-    sx_prices = annotate_transaction_history(sx_prices, "../../data/stockx/20190615-145954/")
+    fc_prices, sx_prices = read_files(fc_file, sx_file)
+    sx_prices = annotate_transaction_history(sx_prices, sx_transactions_folder)
     matches = match_items(fc_prices, sx_prices)
 
     margins = find_margin(matches)
+    score_mode = args.score_mode if args.score_mode else 'multi'
+    margins = annotate_score(margins, score_mode)
 
-    crossing_margin_rate_sorted_items = sorted(margins.items(), key=lambda kv: kv[1]['crossing_margin_rate'], reverse=True)
-    with open("crossing_margin_sorted.{}.txt".format(runtime), "w") as wfile:
-        wfile.write(pp.pformat(crossing_margin_rate_sorted_items))
+    score_sorted_item = sorted(
+        margins.items(), key=lambda kv: kv[1]['score'], reverse=True)
+    outfile = args.out if args.out else "score_sorted.{}.txt".format(runtime)
+    with open(outfile, "w") as wfile:
+        wfile.write(pp.pformat(score_sorted_item))
 
-    regular_size_crossing_margin_rate_sorted_items = []
-    for item in crossing_margin_rate_sorted_items:
-        shoe_size = float(item[1]['shoe_size'])
-        if shoe_size == 9.0 or shoe_size == 8.5 or shoe_size == 9.5:
-            regular_size_crossing_margin_rate_sorted_items.append(item[1])
+    if args.emails:
+        report = generate_html_report(
+            score_sorted_item, args.limit, runtime=runtime, score=score_mode,
+            fc_file=fc_file, sx_file=sx_file,
+            sx_transactions_folder=sx_transactions_folder)
 
-    with open("regular_size_crossing_margin_sorted.{}.txt".format(runtime), "w") as wfile:
-        wfile.write(pp.pformat(regular_size_crossing_margin_rate_sorted_items))
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo()
+        server.starttls()
+        server.login('testname.zhehao@gmail.com', 'test@2019')
+
+        msg = MIMEText(report, 'html')
+        msg['Subject'] = 'Check out these shoes %s' % runtime
+        msg['From'] = 'testname.zhehao@gmail.com'
+        msg['To'] = args.emails
+
+        # Send the message via our own SMTP server.
+        server.send_message(msg)
+        server.quit()
+
+    # "regular sized" shoes usually have low profit margin. we should revisit
+    # this from time to time
+
+    # regular_size_crossing_margin_rate_sorted_items = []
+    # for item in score_sorted_item:
+    #     shoe_size = float(item[1]['shoe_size'])
+    #     if shoe_size == 9.0 or shoe_size == 8.5 or shoe_size == 9.5:
+    #         regular_size_crossing_margin_rate_sorted_items.append(item[1])
+
+    # with open("regular_size_crossing_margin_sorted.{}.txt".format(runtime), "w") as wfile:
+    #     wfile.write(pp.pformat(regular_size_crossing_margin_rate_sorted_items))
+
 
