@@ -10,6 +10,10 @@ class StockxOrder(object):
             print("error constructing StockxOrder: {}".format(e))
             print(order_json)
             print(order_type)
+        except KeyError as e:
+            print("error constructing StockxOrder: {}".format(e))
+            print(order_json)
+            print(order_type)
 
     def __str__(self):
     	return "uuid: {}; size: {}; order_type: {}; px: {}; num_orders: {}".format(self.product_uuid, self.shoe_size, self.order_type, self.order_price, self.num_orders)

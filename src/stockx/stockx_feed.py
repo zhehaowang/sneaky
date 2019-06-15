@@ -317,10 +317,11 @@ if __name__ == "__main__":
                                                     "style_id": item["style_id"]
                                                 }}
                                         bests_file.write(
-                                            "{},{},{},{},{},{},\"{}\"".format(
+                                            "{},{},{},{},{},{},{},{}\n".format(
                                                 item["name"],
                                                 item["url"],
                                                 item["style_id"],
+                                                shoe_size,
                                                 best_bid,
                                                 best_ask,
                                                 int(item["sales_last_72"]),
