@@ -299,7 +299,8 @@ if __name__ == "__main__":
                             book_filename = os.path.join(
                                 outdir, style_id + '.txt')
                             transactions_filename = os.path.join(
-                                outdir, style_id + '.transaction.txt')
+                                outdir, (style_id + '.transaction.txt').replace(
+                                    '(', '-').replace(')', '-'))
 
                             with open(book_filename, 'w') as wfile, open(transactions_filename, 'w') as tfile:
                                 wfile.write(bookstr)

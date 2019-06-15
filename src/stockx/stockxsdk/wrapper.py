@@ -202,7 +202,7 @@ class Stockx():
         command = '/products/{0}/activity?state={1}{2}'.format(product_id, activity_type, suffix)
         return self.__get(command)
 
-    def get_transactions(self, product_id, limit=50):
+    def get_transactions(self, product_id, limit=200):
         res = self.__get_activity(product_id, 480, "&currency=USD&limit={}&page=1&sort=createdAt&order=DESC".format(limit))
         return res
 

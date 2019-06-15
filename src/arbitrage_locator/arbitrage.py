@@ -14,6 +14,9 @@ pp = pprint.PrettyPrinter()
 def sanitize_key(key):
     return key.lower().replace('-', '').replace(' ', '')
 
+def sanitize_size(size):
+    return size.strip('.0')
+
 def read_files(fc_file, stockx_file):
     """Read in two files and produce two dictionaries of stockx and flightclub
     prices
@@ -87,7 +90,7 @@ def match_items(fc_prices, sx_prices):
             total_model_matches += 1
             for size in fc_prices[style_id]:
                 # TODO: strip this awkward float - str match
-                sx_size = size.strip('.0')
+                sx_size = sanitize_size(size)
                 if sx_size in sx_prices[style_id]:
                     total_matches += 1
                     fc_item = fc_prices[style_id][size]
@@ -145,8 +148,8 @@ def find_margin(matches):
                         adding_margin_rate = 0
 
                     fc_url_with_size = item['fc']['url'] + '?size=' + size
-                    margins[fc_url_with_size] = {
-                        'style_id': style_id,
+                    match_item = {
+                        # 'style_id': style_id,
                         'shoe_size': size,
 
                         'fc_px': item['fc']['px'],
@@ -156,19 +159,47 @@ def find_margin(matches):
                         'sx_best_ask': item['sx']['best_ask'],
                         'sx_volume_last_72': item['sx']['sales_last_72'],
                         'sx_url': item['sx']['url'],
+                        'sx_transactions': item['sx']['sx_transactions']
+                            if 'sx_transactions' in item['sx'] else [],
 
                         'crossing_margin': crossing_margin,
                         'crossing_margin_rate': crossing_margin_rate,
                         'adding_margin': adding_margin,
                         'adding_margin_rate': adding_margin_rate
                     }
-
+                    margins[style_id + ' ' + size] = match_item
+    # pp.pprint(margins)
     return margins
+
+def annotate_transaction_history(sx_prices, data_prefix="../../data/stockx/"):
+    for style_id in sx_prices:
+        style_id_file = os.path.join(data_prefix, style_id + ".transaction.txt")
+        transactions = {}
+
+        if os.path.isfile(style_id_file):
+            with open(style_id_file, 'r') as sfile:
+                transactions_reader = csv.reader(
+                    sfile, delimiter=',', quotechar='\"')
+                for row in transactions_reader:
+                    size = row[0]
+                    time = row[1]
+                    px = row[2]
+                    if size in transactions:
+                        transactions[size].append({"time": time, "px": px})
+                    else:
+                        transactions[size] = [{"time": time, "px": px}]
+            for size in sx_prices[style_id]:
+                if size in transactions:
+                    sx_prices[style_id][size]["sx_transactions"] = transactions[size]
+            # print('attached transactions: {}'.format(style_id))
+
+    return sx_prices
 
 if __name__ == "__main__":
     runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     fc_prices, sx_prices = read_files("flightclub.20190614.txt", "best_prices.txt")
+    sx_prices = annotate_transaction_history(sx_prices, "../../data/stockx/20190615-145954/")
     matches = match_items(fc_prices, sx_prices)
 
     margins = find_margin(matches)
