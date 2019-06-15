@@ -8,6 +8,7 @@ import datetime
 import argparse
 import time
 
+from random import randrange
 from stockxsdk import Stockx
 
 pp = pprint.PrettyPrinter(indent=2)
@@ -225,7 +226,7 @@ if __name__ == "__main__":
 
         cred = json.loads(cred_file.read())["stockx"]
         cred_cnt = len(cred)
-        cred_idx = 0
+        cred_idx = randrange(cred_cnt)
         promising_items = []
 
         with open("query_kw.txt", "r") as query_file, open(os.path.join(promising_dirname, "best_prices.txt"), 'w') as bests_file:

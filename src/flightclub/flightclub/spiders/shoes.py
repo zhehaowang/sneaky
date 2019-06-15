@@ -92,6 +92,6 @@ class ShoesSpider(scrapy.Spider):
             print("unable to find brand / name / style / px {}".format(url))
 
     def closed(self, reason):
-        with open("flightclub.{}.txt".format(datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
+        with open("../../data/flightclub/flightclub.{}.txt".format(datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
             wfile.write(json.dumps(self.prices, indent=4, sort_keys=True))
 

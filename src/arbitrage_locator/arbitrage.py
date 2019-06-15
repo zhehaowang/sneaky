@@ -15,7 +15,14 @@ def sanitize_key(key):
     return key.lower().replace('-', '').replace(' ', '')
 
 def read_files(fc_file, stockx_file):
-    """Read in two files and produce {"style-id": {"8": {}}}
+    """Read in two files and produce two dictionaries of stockx and flightclub
+    prices
+
+    @param str fc_file name
+    @param str stockx_file name
+    @return fc_dict, stockx_dict, both of the form
+        {"style-id": {"8": {...},
+                      "9": {...}}}
     """
     fc_prices = {}
     sx_prices = {}
@@ -60,7 +67,17 @@ def read_files(fc_file, stockx_file):
 
     return fc_prices, sx_prices
 
-def match_items(fc_prices, sx_prices):    
+def match_items(fc_prices, sx_prices):
+    """Combine given dictionaries of fc prices and stockx prices and produce
+    matched items.
+
+    @param dict fc_prices {"style_id": {"8": {...}}}
+    @param dict sx_prices {"style_id": {"8": {...}}}
+    @return matched dict
+        {"style_id": {"8":
+            {"fc": {...},
+             "sx": {...}}}}
+    """
     matches = {}
     total_matches = 0
     total_model_matches = 0
@@ -69,10 +86,12 @@ def match_items(fc_prices, sx_prices):
         if style_id in sx_prices:
             total_model_matches += 1
             for size in fc_prices[style_id]:
-                if size in sx_prices[style_id]:
+                # TODO: strip this awkward float - str match
+                sx_size = size.strip('.0')
+                if sx_size in sx_prices[style_id]:
                     total_matches += 1
                     fc_item = fc_prices[style_id][size]
-                    sx_item = sx_prices[style_id][size]
+                    sx_item = sx_prices[style_id][sx_size]
                     if not style_id in matches:
                         matches[style_id] = {
                             size: {
@@ -87,6 +106,17 @@ def match_items(fc_prices, sx_prices):
     return matches
 
 def find_margin(matches):
+    """Given the combined prices from sx and fc produce a dict of items with
+    crossing margin computed.
+
+    @param matched dict
+        {"style_id": {"8":
+            {"fc": {...},
+             "sx": {...}}}}
+    @return {"fc_url?size": {"crossing_margin": xxx, 
+                             "sx_xxx": ...,
+                             "fc_yyy": ...}}
+    """
     sx_threshold = 50
     sx_bid_commission = 13.95
     fc_commission_rate = 0.2
