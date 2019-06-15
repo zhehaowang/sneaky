@@ -13,8 +13,11 @@ from stockxsdk import Stockx
 
 pp = pprint.PrettyPrinter(indent=2)
 
-SLEEP_TIME = 120
-PER_PAGE_SLEEP_TIME = 1
+RETRY_TIME = 120
+PER_QUERY_SLEEP_TIME = 120
+
+def sanitize_key(key):
+    return key.lower().replace('-', '').replace(' ', '')
 
 class StockXFeed():
     def __init__(self):
@@ -25,7 +28,7 @@ class StockXFeed():
         self.usrname = usrname
         self.pwd = pwd
         if not self.stockx.authenticate(usrname, pwd):
-            time.sleep(SLEEP_TIME)
+            time.sleep(RETRY_TIME)
             self.authenticate(usrname, pwd)
 
     def get_details(self, product_id):
@@ -37,8 +40,8 @@ class StockXFeed():
         product = self.stockx.get_product(product_id)
         if not hasattr(product, 'title'):
             print(("get details failed for {}. presumably we need to throttle "
-                   "and re-auth. sleeping {}s").format(product_id, SLEEP_TIME))
-            time.sleep(SLEEP_TIME)
+                   "and re-auth. sleeping {}s").format(product_id, PER_QUERY_SLEEP_TIME))
+            time.sleep(PER_QUERY_SLEEP_TIME)
             self.authenticate(self.usrname, self.pwd)
             self.get_details(product_id)
             return
@@ -53,6 +56,7 @@ class StockXFeed():
 
         asks = self.stockx.get_asks(product_id)
         bids = self.stockx.get_bids(product_id)
+        transactions = self.stockx.get_transactions(product_id)
 
         # if len(bids) > 0:
         #     best_bid = bids[-1]
@@ -66,7 +70,7 @@ class StockXFeed():
 
         book = StockXFeed.build_book(product, bids, asks)
         # bookstr = StockXFeed.serialize_book(product.title, book)
-        return book
+        return book, transactions
 
     @staticmethod
     def is_better(px1, px2, side):
@@ -157,6 +161,24 @@ class StockXFeed():
         return res_str
 
     @staticmethod
+    def parse_transaction(transactions):
+        result = []
+        try:
+            activities = transactions["ProductActivity"]
+            for item in activities:
+                if "amount" in item and "createdAt" in item and "shoeSize" in item:
+                    result.append({"time": item["createdAt"],
+                                   "px": item["amount"],
+                                   "shoe_size": item["shoeSize"]})
+        except ValueError as e:
+            print("ValueError")
+            print(e)
+        except KeyError as e:
+            print("KeyError")
+            print(e)
+        return result
+
+    @staticmethod
     def deserialize_book(bookstr):
         return
 
@@ -221,6 +243,7 @@ if __name__ == "__main__":
     os.mkdir(promising_dirname)
 
     best_prices = {}
+    searched_items = {}
 
     with open("../../credentials/credentials.json", "r") as cred_file:
 
@@ -243,102 +266,125 @@ if __name__ == "__main__":
                 cred_idx = (cred_idx + 1) % cred_cnt
 
                 results = stockx_feed.search(line)
+                results_cnt = len(results)
+                print('found {} items for keyword {}'.format(results_cnt, line))
+
                 items_map = []
                 for item in results:
-                    if 'objectID' in item:
+                    if 'objectID' in item and item['objectID'] not in searched_items:
                         try:
-                            book = stockx_feed.get_details(item['objectID'])
+                            book, transactions_json = stockx_feed.get_details(item['objectID'])
+                            searched_items[item['objectID']] = True
+
                             if not book:
+                                print('no book parsed for {}. skipping'.format(
+                                    item['name']))
                                 continue
 
+                            if 'sales_last_72' not in item or not item['sales_last_72']:
+                                print('no sales parsed for {}. skipping'.format(
+                                    item['name']))
+                                continue
+                            if 'style_id' not in item or not item['style_id']:
+                                print('no style_id parsed for {}. skipping'.format(
+                                    item['name']))
+                                continue
+
+                            style_id = sanitize_key(item['style_id'])
                             bookstr = StockXFeed.serialize_book(
                                 item['name'], book)
+                            transactions = StockXFeed.parse_transaction(
+                                transactions_json)
 
                             book_filename = os.path.join(
-                                outdir, item['name'].replace('/', '-') + '.txt')
-                            with open(book_filename, 'w') as wfile:
-                                wfile.write(bookstr)
-                            if 'sales_last_72' in item and item['sales_last_72']:
-                                items_map.append({
-                                    'book': book_filename,
-                                    'sales_last_72': int(item['sales_last_72']),
-                                    'name': item['name'],
-                                    'last_price': -1 if 'last_sale' not in item else float(item['last_sale']),
-                                    'size_prices': {}
-                                })
-                                for shoe_size in book:
-                                    if len(book[shoe_size]["bid"]) == 0:
-                                        best_bid = 0
-                                    else:
-                                        best_bid = book[shoe_size]["bid"][0]["px"]
-                                    if len(book[shoe_size]["ask"]) == 0:
-                                        best_ask = 0
-                                    else:
-                                        best_ask = book[shoe_size]["ask"][0]["px"]
+                                outdir, style_id + '.txt')
+                            transactions_filename = os.path.join(
+                                outdir, style_id + '.transaction.txt')
 
-                                    bid_size = 0
-                                    ask_size = 0
-                                    for level in book[shoe_size]["bid"]:
-                                        if abs(
-                                                level["px"] - best_bid) < relevant_levels:
-                                            bid_size += level["size"]
-                                    for level in book[shoe_size]["ask"]:
-                                        if abs(
-                                                level["px"] - best_ask) < relevant_levels:
-                                            ask_size += level["size"]
-                                    items_map[-1]['size_prices'][shoe_size] = {
+                            with open(book_filename, 'w') as wfile, open(transactions_filename, 'w') as tfile:
+                                wfile.write(bookstr)
+                                for transaction in transactions:
+                                    tfile.write("{},{},{}\n".format(
+                                        transaction["shoe_size"],
+                                        transaction["time"],
+                                        transaction["px"]))
+
+                            items_map.append({
+                                'book': book_filename,
+                                'sales_last_72': int(item['sales_last_72']),
+                                'name': item['name'],
+                                'last_price': -1 if 'last_sale' not in item else float(item['last_sale']),
+                                'size_prices': {}
+                            })
+                            for shoe_size in book:
+                                if len(book[shoe_size]["bid"]) == 0:
+                                    best_bid = 0
+                                else:
+                                    best_bid = book[shoe_size]["bid"][0]["px"]
+                                if len(book[shoe_size]["ask"]) == 0:
+                                    best_ask = 0
+                                else:
+                                    best_ask = book[shoe_size]["ask"][0]["px"]
+
+                                bid_size = 0
+                                ask_size = 0
+                                for level in book[shoe_size]["bid"]:
+                                    if abs(
+                                            level["px"] - best_bid) < relevant_levels:
+                                        bid_size += level["size"]
+                                for level in book[shoe_size]["ask"]:
+                                    if abs(
+                                            level["px"] - best_ask) < relevant_levels:
+                                        ask_size += level["size"]
+                                items_map[-1]['size_prices'][shoe_size] = {
+                                    "best_bid": best_bid,
+                                    "best_ask": best_ask,
+                                    "relevant_bid_total_size": bid_size,
+                                    "relevant_ask_total_size": ask_size
+                                }
+
+                                # distilled view
+                                if style_id in best_prices:
+                                    best_prices[style_id][shoe_size] = {
                                         "best_bid": best_bid,
                                         "best_ask": best_ask,
-                                        "relevant_bid_total_size": bid_size,
-                                        "relevant_ask_total_size": ask_size
+                                        "sales_last_72": int(item["sales_last_72"]),
+                                        "search_term": line,
+                                        "url": item["url"],
+                                        "name": item["name"],
+                                        "style_id": item["style_id"]
                                     }
-
-                                    # distilled view
-                                    if 'style_id' in item:
-                                        item_key = item['style_id']
-                                        if item_key in best_prices:
-                                            best_prices[item_key][shoe_size] = {
-                                                "best_bid": best_bid,
-                                                "best_ask": best_ask,
-                                                "sales_last_72": int(item["sales_last_72"]),
-                                                "search_term": line,
-                                                "url": item["url"],
-                                                "name": item["name"],
-                                                "style_id": item["style_id"]
-                                            }
-                                        else:
-                                            best_prices[item_key] = {
-                                                shoe_size: {
-                                                    "best_bid": best_bid,
-                                                    "best_ask": best_ask,
-                                                    "sales_last_72": int(item["sales_last_72"]),
-                                                    "search_term": line,
-                                                    "url": item["url"],
-                                                    "name": item["name"],
-                                                    "style_id": item["style_id"]
-                                                }}
-                                        bests_file.write(
-                                            "{},{},{},{},{},{},{},{}\n".format(
-                                                item["name"],
-                                                item["url"],
-                                                item["style_id"],
-                                                shoe_size,
-                                                best_bid,
-                                                best_ask,
-                                                int(item["sales_last_72"]),
-                                                line))
-                                    else:
-                                        print('style_id not in {}'.format(
-                                            item["name"]))
-                            time.sleep(PER_PAGE_SLEEP_TIME)
+                                else:
+                                    best_prices[style_id] = {
+                                        shoe_size: {
+                                            "best_bid": best_bid,
+                                            "best_ask": best_ask,
+                                            "sales_last_72": int(item["sales_last_72"]),
+                                            "search_term": line,
+                                            "url": item["url"],
+                                            "name": item["name"],
+                                            "style_id": style_id
+                                        }}
+                                bests_file.write(
+                                    "{},{},{},{},{},{},{},{}\n".format(
+                                        item["name"],
+                                        item["url"],
+                                        style_id,
+                                        shoe_size,
+                                        best_bid,
+                                        best_ask,
+                                        int(item["sales_last_72"]),
+                                        line))
 
                         except TypeError as e:
                             print(e)
-                            print('skipping {}'.format(item['objectID']))
+                            print('TypeError. skipping {}'.format(
+                                item['objectID']))
+
 
                 print("voluntary throttle, flush to file")
                 bests_file.flush()
-                time.sleep(SLEEP_TIME)
+                time.sleep(PER_QUERY_SLEEP_TIME)
 
                 items_map.sort(key=lambda x: x['sales_last_72'], reverse=True)
                 # pp.pprint(items_map)
