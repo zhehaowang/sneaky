@@ -17,7 +17,7 @@ from email.mime.text import MIMEText
 
 pp = pprint.PrettyPrinter()
 
-def sanitize_key(key):
+def sanitize_style_id(key):
     return key.lower().replace('-', '').replace(' ', '')
 
 def sanitize_size(size):
@@ -40,7 +40,7 @@ def read_files(fc_file, stockx_file):
         fc_prices_presantize = json.loads(rfile.read())
 
     for key in fc_prices_presantize:
-        fc_prices[sanitize_key(key)] = fc_prices_presantize[key]
+        fc_prices[sanitize_style_id(key)] = fc_prices_presantize[key]
 
     with open(stockx_file, "r") as rfile:
         stockx_reader = csv.reader(rfile, delimiter=',', quotechar='\"')
@@ -54,22 +54,24 @@ def read_files(fc_file, stockx_file):
             sx_volume_last_72 = int(row[6])
             if style_id.lower() != "none":
                 if best_ask > 0:
-                    style_id = sanitize_key(style_id)
-                    if style_id in sx_prices:
-                        sx_prices[style_id][shoe_size] = {
+                    style_id_san = sanitize_style_id(style_id)
+                    if style_id_san in sx_prices:
+                        sx_prices[style_id_san][shoe_size] = {
                             "name": name,
                             "url": url,
                             "best_bid": best_bid,
                             "best_ask": best_ask,
-                            "sales_last_72": sx_volume_last_72
+                            "sales_last_72": sx_volume_last_72,
+                            "style_id_ori": style_id
                         }
                     else:
-                        sx_prices[style_id] = {shoe_size: {
+                        sx_prices[style_id_san] = {shoe_size: {
                             "name": name,
                             "url": url,
                             "best_bid": best_bid,
                             "best_ask": best_ask,
-                            "sales_last_72": sx_volume_last_72
+                            "sales_last_72": sx_volume_last_72,
+                            "style_id_ori": style_id
                         }}
             else:
                 print("{} (url: {}) has None style ID".format(name, url))
@@ -112,7 +114,7 @@ def match_items(fc_prices, sx_prices):
 
     pp.pprint("found {} model matches, {} (model, size) matches".format(
         total_model_matches, total_matches))
-    return matches
+    return matches, total_model_matches, total_matches
 
 def find_margin(matches):
     """Given the combined prices from sx and fc produce a dict of items with
@@ -153,11 +155,20 @@ def find_margin(matches):
             if item['sx']['best_ask'] and item['sx']['best_bid']:
                 if int(item['sx']['sales_last_72']) > sx_threshold:
 
-                    crossing_margin = float(item['fc']['px'].replace(',', '')) * (1 - fc_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission
+                    sell_px = float(item['fc']['px'])
+                    if 'sell_px_highest' in item['fc']:
+                        sell_px = min(sell_px, float(item['fc']['sell_px_highest']))
+                    if 'sell_px_market' in item['fc']:
+                        sell_px = min(sell_px, float(item['fc']['sell_px_market']))
+                    sell_link = ''
+                    if 'sell_id' in item['fc']:
+                        sell_link = 'https://sell.flightclub.com/products/{}'.format(item['fc']['sell_id'])
+
+                    crossing_margin = sell_px * (1 - fc_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission
                     crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
 
                     if item['sx']['best_bid'] > 0:
-                        adding_margin = float(item['fc']['px'].replace(',', '')) * (1 - fc_commission_rate) - float(item['sx']['best_bid']) - (cut_in_tick + sx_bid_commission)
+                        adding_margin = sell_px * (1 - fc_commission_rate) - float(item['sx']['best_bid']) - (cut_in_tick + sx_bid_commission)
                         adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick)
                     else:
                         adding_margin = 0
@@ -165,11 +176,12 @@ def find_margin(matches):
 
                     fc_url_with_size = item['fc']['url'] + '?size=' + size
                     match_item = {
-                        'style_id': style_id,
+                        'style_id': item['sx']['style_id_ori'],
                         'name': item['sx']['name'],
                         'shoe_size': sanitize_size(size),
 
-                        'fc_px': float(item['fc']['px'].replace(',', '')),
+                        'fc_px': sell_px,
+                        'fc_sell_url': sell_link,
                         'fc_url': fc_url_with_size,
 
                         'sx_best_bid': item['sx']['best_bid'],
@@ -295,6 +307,7 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                     "<th>Size</th>"
                     "<th>StockX</th>"
                     "<th>FlightClub</th>"
+                    "<th>FlightClub: Sell Market Price</th>"
                     "<th>Crossing Margin</th>"
                     "<th>Crossing Margin Rate</th>"
                     "<th>StockX Transaction Rate</th>"
@@ -311,6 +324,7 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         "<td>{}</td>"
                         "<td>{}</td>"
                         "<td>{}</td>"
+                        "<td>{}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{:.2f}</td>"
@@ -321,6 +335,7 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                             shoe['sx_url'], float(shoe['sx_best_ask'])),
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['fc_url'], float(shoe['fc_px'])),
+                        "not found" if not shoe['fc_sell_url'] else "<a href=\"{}\">{:.2f}</a>".format(shoe['fc_sell_url'], shoe['fc_px']),
                         shoe['crossing_margin'], shoe['crossing_margin_rate'],
                         shoe['volume'], shoe['score'], shoe['style_id'])
             report_cnt += 1
@@ -332,9 +347,9 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    fc_file = "flightclub.20190614.txt"
-    sx_file = "best_prices.20190614-230824.txt"
-    sx_transactions_folder = "../../data/stockx/20190615-145954/"
+    fc_file = "../../data/flightclub/flightclub.20190616.txt"
+    sx_file = "../../data/stockx/20190615-163528/promising/best_prices.txt"
+    sx_transactions_folder = "../../data/stockx/20190615-163528/"
 
     parser.add_argument(
         "--score_mode",
@@ -355,7 +370,7 @@ if __name__ == "__main__":
 
     fc_prices, sx_prices = read_files(fc_file, sx_file)
     sx_prices = annotate_transaction_history(sx_prices, sx_transactions_folder)
-    matches = match_items(fc_prices, sx_prices)
+    matches, total_model_matches, total_matches = match_items(fc_prices, sx_prices)
 
     margins = find_margin(matches)
     score_mode = args.score_mode if args.score_mode else 'multi'
@@ -371,7 +386,9 @@ if __name__ == "__main__":
         report = generate_html_report(
             score_sorted_item, args.limit, runtime=runtime, score=score_mode,
             fc_file=fc_file, sx_file=sx_file,
-            sx_transactions_folder=sx_transactions_folder)
+            sx_transactions_folder=sx_transactions_folder,
+            total_model_matches=total_model_matches,
+            total_model_size_matches=total_matches)
 
         server = smtplib.SMTP('smtp.gmail.com:587')
         server.ehlo()
