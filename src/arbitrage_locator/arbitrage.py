@@ -12,10 +12,7 @@ import datetime
 
 import argparse
 
-# Import smtplib for the actual sending function
 import smtplib
-
-# Import the email modules we'll need
 from email.mime.text import MIMEText
 
 pp = pprint.PrettyPrinter()
@@ -229,8 +226,8 @@ def score_crossing_margin_rate(item):
     return item['crossing_margin_rate'], 0
 
 def score_margin_single_entity_transactions_size(item):
-    # an item with a high crossing margin rate, how single entity price, high
-    # transaction amounts and closer to norm size scores better
+    # an item with a high crossing margin rate, low single entity price, high
+    # volume and close to norm size scores better
 
     # we can't really accurately account for transaction rate as some data is 
     # still being scraped. when we don't have such data we use the this table
