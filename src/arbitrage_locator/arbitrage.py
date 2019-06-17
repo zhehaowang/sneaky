@@ -6,6 +6,7 @@ import sys
 import json
 import csv
 import pytz
+import math
 
 import pprint
 import datetime
@@ -299,6 +300,7 @@ def score_margin_single_entity_transactions_size(item):
     else:
         if item['shoe_size'] in size_discount_multiplier:
             transaction_rate = 0.2 * size_discount_multiplier[item['shoe_size']]
+            item['volume_approximated'] = True
         else:
             print('unknown size {}'.format(item['shoe_size']))
             transaction_rate = 0
@@ -311,9 +313,16 @@ def score_margin_single_entity_transactions_size(item):
     elif item['sx_best_ask'] > 300:
         price_discount = 0.9
 
-    return item['crossing_margin_rate'] * transaction_rate * price_discount, transaction_rate
+    return item['crossing_margin_rate'] * math.sqrt(transaction_rate) * price_discount, transaction_rate
 
 def generate_html_report(score_sorted_item, limit, **run_info):
+    crossing_margin_cutoff_rate = 0.01
+    if 'crossing_margin_cutoff_rate' in run_info:
+        crossing_margin_cutoff_rate = run_info['crossing_margin_cutoff_rate']
+    crossing_margin_cutoff_value = 10
+    if 'crossing_margin_cutoff_value' in run_info:
+        crossing_margin_cutoff_value = run_info['crossing_margin_cutoff_value']
+
     text = ("<html><head></head><body>"
         "Hi,<br><p>Please see below for a list of candidate shoes.</p>")
 
@@ -334,7 +343,9 @@ def generate_html_report(score_sorted_item, limit, **run_info):
     report_cnt = 0
     for key in score_sorted_item:
         shoe = key[1]
-        if shoe["crossing_margin_rate"] > 0.01 and (not limit or report_cnt < limit):
+        if shoe["crossing_margin_rate"] > crossing_margin_cutoff_rate and \
+           shoe["crossing_margin"] > crossing_margin_cutoff_value and \
+           (not limit or report_cnt < limit):
             text += ("<tr>"
                         "<td>{}</td>"
                         "<td>{}</td>"
@@ -343,17 +354,19 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         "<td>{}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{:.2f}</td>"
-                        "<td>{:.2f}</td>"
+                        "<td>{}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{}</td>"
-                     "</tr>").format(shoe['name'], shoe['shoe_size'],
+                     "</tr>").format(
+                        shoe['name'], shoe['shoe_size'],
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['sx_url'], float(shoe['sx_best_ask'])),
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['fc_url'], float(shoe['fc_list_px'])),
                         "not found" if not shoe['fc_sell_url'] else "<a href=\"{}\">{:.2f}</a>".format(shoe['fc_sell_url'], shoe['fc_sell_px']),
                         shoe['crossing_margin'], shoe['crossing_margin_rate'],
-                        shoe['volume'], shoe['score'], shoe['style_id'])
+                        "{:.2f}{}".format(shoe['volume'], ' (approx)' if 'volume_approximated' in shoe else ''),
+                        shoe['score'], shoe['style_id'])
             report_cnt += 1
 
     text += "<table><br><br>{}".format(json.dumps(run_info, indent=4, sort_keys=True))
@@ -404,7 +417,9 @@ if __name__ == "__main__":
             fc_file=fc_file, sx_file=sx_file,
             sx_transactions_folder=sx_transactions_folder,
             total_model_matches=total_model_matches,
-            total_model_size_matches=total_matches)
+            total_model_size_matches=total_matches,
+            crossing_margin_cutoff_rate=0.05,
+            crossing_margin_cutoff_value=20)
 
         server = smtplib.SMTP('smtp.gmail.com:587')
         server.ehlo()
