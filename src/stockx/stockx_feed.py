@@ -16,7 +16,7 @@ pp = pprint.PrettyPrinter(indent=2)
 RETRY_TIME = 120
 PER_QUERY_SLEEP_TIME = 120
 
-def sanitize_key(key):
+def sanitize_style_id(key):
     return key.lower().replace('-', '').replace(' ', '')
 
 def sanitize_filename(key):
@@ -243,6 +243,7 @@ if __name__ == "__main__":
     outdir = "../../data/stockx/" + runtime
     os.mkdir(outdir)
 
+
     promising_dirname = os.path.join(outdir, 'promising')
     os.mkdir(promising_dirname)
 
@@ -294,7 +295,7 @@ if __name__ == "__main__":
                                     item['name']))
                                 continue
 
-                            style_id = sanitize_key(item['style_id'])
+                            style_id = sanitize_style_id(item['style_id'])
                             bookstr = StockXFeed.serialize_book(
                                 item['name'], book)
                             transactions = StockXFeed.parse_transaction(
@@ -398,10 +399,13 @@ if __name__ == "__main__":
                 promising_items += find_promising(items_map)
                 print("done")
 
-            with open(os.path.join(promising_dirname, "items.txt"), 'w') as promising_file:
-                promising_file.write(pp.pformat(promising_items))
-                for item in promising_items:
-                    basename = os.path.basename(item['book'])
-                    os.symlink(item['book'], os.path.join(
-                        promising_dirname, basename.replace(' ', '-')))
+            # we no longer care about promising items for market making on
+            # stockx alone.
+
+            # with open(os.path.join(promising_dirname, "items.txt"), 'w') as promising_file:
+            #     promising_file.write(pp.pformat(promising_items))
+            #     for item in promising_items:
+            #         basename = os.path.basename(item['book'])
+            #         os.symlink(item['book'], os.path.join(
+            #             promising_dirname, basename.replace(' ', '-')))
 

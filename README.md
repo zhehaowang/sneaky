@@ -1,63 +1,42 @@
-# shoes-feed
+# Sneaky
 
-Feed data gathering on flea markets for shoes.
+Feed and strategy for secondary markets for sneakers.
 
-### stockx
+### Strategy
 
-##### stockxapi
+##### stockx
 
-https://pypi.org/project/stockx-py-sdk/
+* [stockxapi](https://pypi.org/project/stockx-py-sdk/)
+* Search term --> product ID
+* product ID --> current book, past sales, transaction history
+* Book builder (per `<shoe model, size>` of given product ID)
+* arbitrary throttling
 
-Customizations
-* Requests user-agent header to evade bot check
-* Orders serialization
-* Order type typo correction
+##### flightclub
 
-##### what to expect
+* scrapy full site scrape
+* model, size --> sell price
+* sell page: style id to sell item id, sell price
 
-* Query output ('air jordan')
-```
-name Jordan 1 Retro High SP Gina
-  best bid 2000
-  best ask 242
-  last sale 236
-  sales last 72 116
+##### ebay
 
-name Jordan 7 Retro Ray Allen Bucks
-  best bid 185
-  best ask 185
-  last sale 189
-  sales last 72 159
-```
+* scrapy search-term based scrape
+* html page (size, price) scrape
+* data deemed too low quality and high chance of subquality item to be of use
 
-* Book builder (per `<shoe model, size>` of given product ID):
-```
----- adidas EQT Support 93/17 Core Black Turbo : 9.5 ----
----- Bid ----  ---- Ask ----
-               260.00 1
-               258.24 1
-               258.00 1
-     1 170.00
-     1 167.00
-     1 165.00
-     1 120.00
-----------------------------
-Spread: 88.00. Mid: 214.00
+##### du
 
----- adidas EQT Support 93/17 Core Black Turbo : 10.5 ----
----- Bid ----  ---- Ask ----
-               221.16 1
-               194.00 2
-     1 135.00
-     1 56.00
-----------------------------
-Spread: 59.00. Mid: 164.50
-```
+### strategies
 
-### flightclub
+##### matching
 
-### ebay
+* name subset based match
+* reverse search term query: one <-> one result item means a match
+* style ID based match
 
-### amazon
+##### strategies
 
-
+* market making on stockx
+  * widest spread items have very low profit rate and long turn-around time: widest spread is about commission rate of the platform
+  * large volatility, low volume, low liquidity
+* arbitrage between stockx and flightclub

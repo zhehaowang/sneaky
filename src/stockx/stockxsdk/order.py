@@ -5,7 +5,7 @@ class StockxOrder(object):
             self.order_type = order_type
             self.order_price = order_json['amount']
             self.shoe_size = order_json['shoeSize']
-            self.num_orders = order_json['frequency']
+            self.num_orders = order_json['frequency'] if 'frequency' in order_json else 0
         except TypeError as e:
             print("error constructing StockxOrder: {}".format(e))
             print(order_json)

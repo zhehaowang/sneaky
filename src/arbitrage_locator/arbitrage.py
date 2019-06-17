@@ -124,9 +124,9 @@ def find_margin(matches):
         {"style_id": {"8":
             {"fc": {...},
              "sx": {...}}}}
-    @return {"fc_url?size": {"crossing_margin": xxx, 
-                             "sx_xxx": ...,
-                             "fc_yyy": ...}}
+    @return {"style-id size": {"crossing_margin": xxx, 
+                               "sx_xxx": ...,
+                               "fc_yyy": ...}}
     """
     # us to china 
     # du_shipping_fee = 20
@@ -180,7 +180,8 @@ def find_margin(matches):
                         'name': item['sx']['name'],
                         'shoe_size': sanitize_size(size),
 
-                        'fc_px': sell_px,
+                        'fc_list_px': float(item['fc']['px']),
+                        'fc_sell_px': sell_px,
                         'fc_sell_url': sell_link,
                         'fc_url': fc_url_with_size,
 
@@ -201,6 +202,13 @@ def find_margin(matches):
     return margins
 
 def annotate_transaction_history(sx_prices, data_prefix="../../data/stockx/"):
+    """For all (style id, size) in stockx prices, find if a matching transaction
+    file exists in given folder.
+    If so, modify sx_prices object with transactions attached to each
+    (style id, size).
+
+    @param sx_prices modified in place
+    """
     for style_id in sx_prices:
         style_id_file = os.path.join(data_prefix, style_id + ".transaction.txt")
         transactions = {}
@@ -222,9 +230,15 @@ def annotate_transaction_history(sx_prices, data_prefix="../../data/stockx/"):
                     sx_prices[style_id][size]["sx_transactions"] = transactions[size]
             # print('attached transactions: {}'.format(style_id))
 
-    return sx_prices
+    return
 
 def annotate_score(margins, score_mode):
+    """For all (style id, size) in stockx prices, calculate a score for the item
+    using the given score_mode, and modify each (style id, size) with score of
+    the item attached.
+
+    @param margins modified in place
+    """
     for item in margins:
         if score_mode == 'naive':
             score, volume = score_crossing_margin_rate(margins[item])
@@ -232,18 +246,20 @@ def annotate_score(margins, score_mode):
             score, volume = score_margin_single_entity_transactions_size(margins[item])
         margins[item]['score'] = score
         margins[item]['volume'] = volume
-    return margins
+    return
 
 def score_crossing_margin_rate(item):
     return item['crossing_margin_rate'], 0
 
 def score_margin_single_entity_transactions_size(item):
-    # an item with a high crossing margin rate, low single entity price, high
-    # volume and close to norm size scores better
+    """An item with a high crossing margin rate, low single entity price, high
+    volume and close to norm size scores better.
 
-    # we can't really accurately account for transaction rate as some data is 
-    # still being scraped. when we don't have such data we use the this table
-    # as approximation
+    We can't really accurately account for transaction rate as some data is 
+    still being scraped. when we don't have such data we use the this table
+    as approximation.
+    """
+    # TODO: move transaction rate calc to annotation step?
 
     size_discount_multiplier = {
         '3.5':  0.40,
@@ -306,11 +322,11 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                     "<th>Name</th>"
                     "<th>Size</th>"
                     "<th>StockX</th>"
-                    "<th>FlightClub</th>"
+                    "<th>FlightClub: Listed Sell Price</th>"
                     "<th>FlightClub: Sell Market Price</th>"
                     "<th>Crossing Margin</th>"
                     "<th>Crossing Margin Rate</th>"
-                    "<th>StockX Transaction Rate</th>"
+                    "<th>StockX Volume / Day</th>"
                     "<th>Score</th>"
                     "<th>Style ID</th>"
                 "</tr>")
@@ -318,7 +334,7 @@ def generate_html_report(score_sorted_item, limit, **run_info):
     report_cnt = 0
     for key in score_sorted_item:
         shoe = key[1]
-        if shoe["crossing_margin_rate"] > 0 and (not limit or report_cnt < limit):
+        if shoe["crossing_margin_rate"] > 0.01 and (not limit or report_cnt < limit):
             text += ("<tr>"
                         "<td>{}</td>"
                         "<td>{}</td>"
@@ -334,13 +350,13 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['sx_url'], float(shoe['sx_best_ask'])),
                         "<a href=\"{}\">{:.2f}</a>".format(
-                            shoe['fc_url'], float(shoe['fc_px'])),
-                        "not found" if not shoe['fc_sell_url'] else "<a href=\"{}\">{:.2f}</a>".format(shoe['fc_sell_url'], shoe['fc_px']),
+                            shoe['fc_url'], float(shoe['fc_list_px'])),
+                        "not found" if not shoe['fc_sell_url'] else "<a href=\"{}\">{:.2f}</a>".format(shoe['fc_sell_url'], shoe['fc_sell_px']),
                         shoe['crossing_margin'], shoe['crossing_margin_rate'],
                         shoe['volume'], shoe['score'], shoe['style_id'])
             report_cnt += 1
 
-    text += "<table><br><br>{}".format(pp.pformat(run_info))
+    text += "<table><br><br>{}".format(json.dumps(run_info, indent=4, sort_keys=True))
     text += "<br><br>Thanks,<br>Sneaky Bot</body></html>"
 
     return text if report_cnt > 0 else "But didn't find anything :("
@@ -348,8 +364,8 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     fc_file = "../../data/flightclub/flightclub.20190616.txt"
-    sx_file = "../../data/stockx/20190615-163528/promising/best_prices.txt"
-    sx_transactions_folder = "../../data/stockx/20190615-163528/"
+    sx_file = "../../data/stockx/20190616-144429/promising/best_prices.txt"
+    sx_transactions_folder = "../../data/stockx/20190616-144429/"
 
     parser.add_argument(
         "--score_mode",
@@ -369,12 +385,12 @@ if __name__ == "__main__":
     runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     fc_prices, sx_prices = read_files(fc_file, sx_file)
-    sx_prices = annotate_transaction_history(sx_prices, sx_transactions_folder)
+    annotate_transaction_history(sx_prices, sx_transactions_folder)
     matches, total_model_matches, total_matches = match_items(fc_prices, sx_prices)
 
     margins = find_margin(matches)
     score_mode = args.score_mode if args.score_mode else 'multi'
-    margins = annotate_score(margins, score_mode)
+    annotate_score(margins, score_mode)
 
     score_sorted_item = sorted(
         margins.items(), key=lambda kv: kv[1]['score'], reverse=True)

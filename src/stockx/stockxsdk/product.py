@@ -14,7 +14,6 @@ class StockxProduct(object):
             self.retail_price = None
         if 'styleId' in product:
             self.style_id = product['styleId']
-            print(self.style_id)
         else:
             self.style_id = None
         self.brand = product['brand']

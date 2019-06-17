@@ -8,48 +8,78 @@ import json
 import datetime
 import os
 
-STYLE_ID_TO_SELL_ITEM_MAP = "../../data/flightclub/style_id_sell_item_id_map.txt"
-
 class ShoesSpider(scrapy.Spider):
     name = 'shoes'
     allowed_domains = ['www.flightclub.com', 'sell.flightclub.com']
     start_urls = ['https://www.flightclub.com/']
 
+    """cached mapping from style ID (flightclub) to the item's ID on flightclub
+    consignment portal.
+    """
+    style_id_to_sell_id = "../../data/flightclub/style_id_sell_item_id_map.txt"
+
     def start_requests(self):
+        """
+        Load style ID to sell IDs map.
+        Send request `https://www.flightclub.com/`
+        """
         self.prices = {}
         self.sell_prices = {}
 
         self.style_id_sell_item_id_map = {}
         self.queried_sell_price = {}
 
-        if os.path.isfile(STYLE_ID_TO_SELL_ITEM_MAP):
-            with open(STYLE_ID_TO_SELL_ITEM_MAP, "r") as rfile:
+        if os.path.isfile(ShoesSpider.style_id_to_sell_id):
+            with open(ShoesSpider.style_id_to_sell_id, "r") as rfile:
                 self.style_id_sell_item_id_map = json.loads(rfile.read())
         for i, url in enumerate(self.start_urls):
             print(url)
-            yield Request(url, headers={'User-Agent':'Mozilla/5.0'}, callback=self.parse)
+            yield Request(
+                url,
+                headers={'User-Agent':'Mozilla/5.0'},
+                callback=self.parse)
 
     def parse(self, response):
-        # top level menu
+        """
+        Top-level menu on homepage, filter links by known brands.
+        Send request for each (brand, series), e.g.
+        `https://www.flightclub.com/air-jordans/air-jordan-2`
+        """
         selector = Selector(response)
-        content_table = selector.xpath("//li[contains(@class, 'level1')]//@href").getall()
+        content_table = selector.xpath(
+            "//li[contains(@class, 'level1')]//@href").getall()
         for url in content_table:
             # print(item)
             if 'jordan' in url or 'nike' in url or 'adidas' in url or 'yeezy' in url:
-                yield Request(url, headers={'User-Agent':'Mozilla/5.0'}, callback=self.parse_items_page)
+                yield Request(
+                    url,
+                    headers={'User-Agent':'Mozilla/5.0'},
+                    callback=self.parse_items_page)
 
     def parse_items_page(self, response):
-        # second level menu
+        """
+        For each model in a (brand, series) page, request that model's page.
+        E.g. `https://www.flightclub.com/air-jordan-2-retro-black-infrared-23-pr-pltnm-wht-011906`
+        """
         selector = Selector(response)
-        content_table = selector.xpath("//li[contains(@class, 'item')]//@href").getall()
+        content_table = selector.xpath(
+            "//li[contains(@class, 'item')]//@href").getall()
         for url in content_table:
-            yield Request(url, headers={'User-Agent':'Mozilla/5.0'}, callback=lambda r, url=url: self.parse_single_model_page(r, url))
+            yield Request(
+                url,
+                headers={'User-Agent':'Mozilla/5.0'},
+                callback=lambda r, url=url: self.parse_single_model_page(r, url))
 
     def parse_single_model_page(self, response, url):
-        # single model page
+        """
+        For each model page, request different available sizes of that model.
+        E.g. `https://www.flightclub.com/air-jordan-2-retro-black-infrared-23-pr-pltnm-wht-011906?size=8.5`
+        """
         selector = Selector(response)
         size_buttons = selector.xpath(
-            "//button[contains(@class, 'attribute-button-text') and contains(@id, 'jpi_option') and not(contains(@id, 'for-notification'))]/text()").getall()
+            ("//button[contains(@class, 'attribute-button-text') and "
+             "contains(@id, 'jpi_option') and "
+             "not(contains(@id, 'for-notification'))]/text()")).getall()
         for btn in size_buttons:
             try:
                 shoe_size = str(float(btn.strip())).strip('.0')
@@ -59,10 +89,19 @@ class ShoesSpider(scrapy.Spider):
                     headers={'User-Agent':'Mozilla/5.0'},
                     callback=lambda r, shoe_size=shoe_size, url=url: self.get_price_of_model_size(r, shoe_size, url))
             except:
-                # swallow
                 continue
 
     def get_price_of_model_size(self, response, shoe_size, url):
+        """
+        For each specific size of a model, parse listed price, name and style id
+        from the returned page.
+        If we don't know the consignment sell ID of this model, send a query to
+        find out. E.g. `https://sell.flightclub.com/api/public/search?page=1&perPage=20&query=385475%20023`
+        If we do know and haven't already requested the consignment selling
+        prices, use the sell ID to request the consignment selling prices for
+        all sizes of this model. E.g.
+        `https://sell.flightclub.com/products/19821`
+        """
         selector = Selector(response)
         price_elems = selector.xpath("//span[contains(@id, 'current-price')]/span/text()").getall()
         brand_elems = selector.xpath("//h2[@itemprop='brand']/text()").getall()
@@ -123,6 +162,14 @@ class ShoesSpider(scrapy.Spider):
             print("unable to find brand / name / style / px {}".format(url))
 
     def get_sell_model_product_id(self, response, style_id):
+        """
+        Given the response of a style ID --> sell ID query, record it in our
+        cached mapping.
+        If we do know and haven't already requested the consignment selling
+        prices, use the sell ID to request the consignment selling prices for
+        all sizes of this model. E.g.
+        `https://sell.flightclub.com/products/19821`
+        """
         results = json.loads(response.body_as_unicode())
         if "results" in results:
             if len(results["results"]) != 1:
@@ -142,6 +189,10 @@ class ShoesSpider(scrapy.Spider):
         return
 
     def get_sell_prices(self, response, style_id):
+        """
+        Given the response consignment sell price query, parse the price marks
+        of all sizes and record in a different dict
+        """
         results = json.loads(response.body_as_unicode())
         try:
             if 'suggestedPrices' in results:
@@ -169,6 +220,14 @@ class ShoesSpider(scrapy.Spider):
         return
 
     def closed(self, reason):
+        """
+        On graceful shutdown, record the
+        1. consignment sell prices keyed by first style id then size
+        2. website url, sell price keyed by first style id then size
+        3. updated <style id, consignment sell id> map
+
+        Don't Ctrl+C twice the application if we want this to be called.
+        """
         for style_id in self.sell_prices:
             for size in self.sell_prices[style_id]:
                 if style_id in self.prices and size in self.prices[style_id]:
@@ -180,7 +239,7 @@ class ShoesSpider(scrapy.Spider):
             datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
             wfile.write(json.dumps(self.prices, indent=4, sort_keys=True))
         
-        with open(STYLE_ID_TO_SELL_ITEM_MAP, "w") as style_id_sell_id_map_file:
+        with open(ShoesSpider.style_id_to_sell_id, "w") as style_id_sell_id_map_file:
             style_id_sell_id_map_file.write(
                 json.dumps(
                     self.style_id_sell_item_id_map, indent=4, sort_keys=True))

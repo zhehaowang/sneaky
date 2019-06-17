@@ -2,6 +2,7 @@ import datetime
 import json
 import requests
 import time
+import os
 
 from stockxsdk.item import StockxItem
 from stockxsdk.order import StockxOrder
@@ -75,6 +76,9 @@ class Stockx():
             time.sleep(self.server_retry_seconds)
             return self.__api_query(request_type, command, data)
         else:
+            if int(response.status_code) == 403:
+                os.system("say 'need help with 403!'")
+
             print("response: {}. we wait {}s.".format(response, self.client_retry_seconds))
             time.sleep(self.client_retry_seconds)
             return self.__api_query(request_type, command, data)
