@@ -7,6 +7,7 @@ from scrapy.xlib.pydispatch import dispatcher
 import json
 import datetime
 import os
+import re
 
 class ShoesSpider(scrapy.Spider):
     name = 'flightclub'
@@ -76,20 +77,88 @@ class ShoesSpider(scrapy.Spider):
         E.g. `https://www.flightclub.com/air-jordan-2-retro-black-infrared-23-pr-pltnm-wht-011906?size=8.5`
         """
         selector = Selector(response)
-        size_buttons = selector.xpath(
-            ("//button[contains(@class, 'attribute-button-text') and "
-             "contains(@id, 'jpi_option') and "
-             "not(contains(@id, 'for-notification'))]/text()")).getall()
-        for btn in size_buttons:
-            try:
-                shoe_size = str(float(btn.strip())).strip('.0')
-                print(url, shoe_size)
+        style_id_elems = selector.xpath("//li[@class='attribute-list-item']/text()").getall()
+
+        style_id = ""
+        release_date = ""
+        color = ""
+        if len(style_id_elems) > 0:
+            style_id = style_id_elems[0].strip().lower()
+        if not style_id:
+            print("failed to retrieve style id in {}".format(url))
+
+        if len(style_id_elems) > 1:
+            color = style_id_elems[1].strip().lower()
+        if len(style_id_elems) > 2:
+            release_date = style_id_elems[2].strip().lower()
+        if not style_id in self.prices:
+            self.prices[style_id] = {}
+
+        response_text = response.body_as_unicode()
+
+        for line in response_text.split('\n'):
+            match = re.match(r"<script type=\"text/javascript\">var productConfiguration = ([^;]+);.*", line)
+            if match:
+                product_configuration_str = match.group(1)
+                try:
+                    product_configuration = json.loads(product_configuration_str)
+                    products_dict = product_configuration['products']['new']['products']
+                    shoe_name = product_configuration['product']['name']
+
+                    for key in products_dict:
+                        for secondary_key in products_dict[key]:
+                            item = products_dict[key][secondary_key]
+                            size_str = item['size']['label']
+                            px_str = item['price']
+                            latest_update = item['latest_price_update_date']
+                            
+                            self.prices[style_id][size_str] = {
+                                "px": float(px_str.strip().replace('$', '').replace(',', '')),
+                                "url": url,
+                                "name": shoe_name,
+                                "release_date": release_date,
+                                "size": size_str,
+                                "color": color
+                            }
+
+                            print(shoe_name, size_str, self.prices[style_id][size_str]["px"], style_id, color, release_date)
+                except KeyError as e:
+                    print(e)
+                    print('unexpected key in {}, page {}'.format(product_configuration_str, url))
+                except json.JSONDecodeError as e:
+                    print(e)
+                    print('unable to decode {}, page {}'.format(product_configuration_str, url))
+                break
+
+        if style_id not in self.style_id_sell_item_id_map:
+            yield Request(
+                "https://sell.flightclub.com/api/public/search?page=1&perPage=20&query={}".format(style_id),
+                headers={'User-Agent':'Mozilla/5.0'},
+                callback=lambda r, style_id=style_id: self.get_sell_model_product_id(r, style_id))
+        else:
+            sell_id = str(self.style_id_sell_item_id_map[style_id])
+            sell_url = "https://sell.flightclub.com/api/public/products/{}".format(sell_id)
+            for shoe_size in self.prices[style_id]:
+                self.prices[style_id][shoe_size]["sell_id"] = sell_id
+            if sell_url not in self.queried_sell_price:
+                self.queried_sell_price[sell_url] = True
                 yield Request(
-                    url + '?size=' + shoe_size,
+                    sell_url,
                     headers={'User-Agent':'Mozilla/5.0'},
-                    callback=lambda r, shoe_size=shoe_size, url=url: self.get_price_of_model_size(r, shoe_size, url))
-            except:
-                continue
+                    callback=lambda r, style_id=style_id: self.get_sell_prices(r, style_id))
+
+        # selector = Selector(response)
+        # size_buttons = selector.xpath(
+        #     ("//button[contains(@class, 'attribute-button-text') and "
+        #      "contains(@class, 'jpi-product-size')]/text()")).getall()
+        # print(len(size_buttons))
+        # print(size_buttons)
+
+        # we probably don't need this:
+
+        if not self.prices[style_id]:
+            print("did not find any sizes on page {}".format(url))
+        return
 
     def get_price_of_model_size(self, response, shoe_size, url):
         """
