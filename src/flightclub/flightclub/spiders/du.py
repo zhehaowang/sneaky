@@ -57,7 +57,8 @@ class DuSpider(scrapy.Spider):
         if not self.du_token or not self.cookie:
             yield self.get_login_request()
         else:
-            yield self.get_list_request()
+            for page_id in range(1, self.max_pages):
+                yield self.get_list_request(page_id)
 
     def get_login_request(self):
         login_form = {
@@ -126,7 +127,9 @@ class DuSpider(scrapy.Spider):
                         print(
                             "du token written.\ntoken {}\ncookie {}.".format(
                                 self.du_token, self.cookie))
-                    yield self.get_list_request()
+                
+                for page_id in range(1, self.max_pages):
+                        yield self.get_list_request(page_id)
             except json.JSONDecodeError as e:
                 print(e)
                 print("unable to decode {}".format(response.body_as_unicode()))
@@ -168,22 +171,21 @@ class DuSpider(scrapy.Spider):
         url += 'sign=' + sign
         return url
 
-    def get_list_request(self):
-        for page_id in range(1, self.max_pages):
-            params = {
-                "size": "[]",
-                "title": "",
-                "typeId": "0",
-                "catId": "0",
-                "unionId": "0",
-                "sortType": "0",
-                "sortMode": "1",
-                "page": str(page_id),
-                "limit": "20",
-            }
-            url = self.get_api_url('/search/list', params)
-            return Request(
-                url, headers=self.headers, callback=self.parse_list)
+    def get_list_request(self, page_id):
+        params = {
+            "size": "[]",
+            "title": "",
+            "typeId": "0",
+            "catId": "0",
+            "unionId": "0",
+            "sortType": "0",
+            "sortMode": "1",
+            "page": str(page_id),
+            "limit": "20",
+        }
+        url = self.get_api_url('/search/list', params)
+        return Request(
+            url, headers=self.headers, callback=self.parse_list)
 
     def parse_list(self, response):
         if response.status != 200:
