@@ -10,6 +10,7 @@ import math
 
 import pprint
 import datetime
+import requests
 
 import argparse
 
@@ -18,13 +19,141 @@ from email.mime.text import MIMEText
 
 pp = pprint.PrettyPrinter()
 
+fx_rates = {}
+
+def get_spot_fx(in_amount, in_curr, out_curr):
+    if not (in_curr, out_curr) in fx_rates:
+        r = requests.get(
+            'http://rate-exchange-1.appspot.com/currency?from={}&to={}'.format(
+                in_curr, out_curr))
+        fx_rates[(in_curr, out_curr)] = r.json()["rate"]
+    return in_amount * fx_rates[(in_curr, out_curr)]
+
+def get_brand(name):
+    nike_names = ['nike', 'jordan']
+    adidas_names = ['yeezy', 'adidas']
+
+    for n in nike_names:
+        if n in name.lower():
+            return 'nike'
+    for n in adidas_names:
+        if n in name.lower():
+            return 'adidas'
+    return None
+
+# agree
+# http://www.shoesizes.co/
+# https://www.quora.com/What-is-the-difference-between-Chinese-and-U-S-shoe-sizes
+# 
+# disagree:
+# https://tbfocus.com/size-conversion-cn-uk-us-eu-fr-intls
+# 
+# adopted: separate nike and adidas charts
+def get_shoe_size(in_size, in_code, out_code):
+    us_chinese_men_size_mapping = {
+        3.5:   35.0,
+        4.0:   36.0,
+        4.5:   37.0,
+        5.0:   38.0,
+        5.5:   39.0,
+        6.0:   39.5,
+        6.5:   40.0,
+        7.0:   41.0,
+        7.5:   41.5,
+        8.0:   42.0,
+        8.5:   43.0,
+        9.0:   43.5,
+        9.5:   44.0,
+        10.0:  44.5,
+        10.5:  45.0,
+        11.0:  46.0,
+        11.5:  46.5,
+        12.0:  47.0,
+        12.5:  47.5
+    }
+    chinese_us_men_size_mapping = {}
+
+    adidas_eu_us_men_size_mapping = {
+        36.0:  4.0,
+        36.5:  4.5,
+        37.0:  5.0,
+        38.0:  5.5,
+        38.5:  6.0,
+        39.0:  6.5,
+        40.0:  7.0,
+        40.5:  7.5,
+        41.0:  8.0,
+        42.0:  8.5,
+        42.5:  9.0,
+        43.0:  9.5,
+        44.0:  10.0,
+        44.5:  10.5,
+        45.0:  11.0,
+        46.0:  11.5,
+        46.5:  12.0,
+        47.0:  12.5,
+        48.0:  13.0,
+        48.5:  13.5,
+        49.0:  14.0
+    }
+    adidas_us_eu_men_size_mapping = {}
+
+    nike_eu_us_men_size_mapping = {
+        35.5:  3.5,
+        36.0:  4.0,
+        36.5:  4.5,
+        37.5:  5.0,
+        38.0:  5.5,
+        38.5:  6.0,
+        39.0:  6.5,
+        40.0:  7.0,
+        40.5:  7.5,
+        41.0:  8.0,
+        42.0:  8.5,
+        42.5:  9.0,
+        43.0:  9.5,
+        44.0:  10.0,
+        44.5:  10.5,
+        45.0:  11.0,
+        45.5:  11.5,
+        46.0:  12.0,
+        46.5:  12.5,
+        47.5:  13.0,
+        48.0:  13.5,
+        48.5:  14.0,
+    }
+    nike_us_eu_men_size_mapping = {}
+
+    if not chinese_us_men_size_mapping:
+        for key in us_chinese_men_size_mapping:
+            chinese_us_men_size_mapping[us_chinese_men_size_mapping[key]] = key
+    if not adidas_us_eu_men_size_mapping:
+        for key in adidas_eu_us_men_size_mapping:
+            adidas_us_eu_men_size_mapping[adidas_eu_us_men_size_mapping[key]] = key
+    if not nike_us_eu_men_size_mapping:
+        for key in nike_eu_us_men_size_mapping:
+            nike_us_eu_men_size_mapping[nike_eu_us_men_size_mapping[key]] = key
+
+    try:
+        if in_code == out_code:
+            return in_size
+        elif in_code == 'eu-adidas-men':
+            if out_code == 'us':
+                return adidas_eu_us_men_size_mapping[in_size]
+        elif in_code == 'eu-nike-men':
+            if out_code == 'us':
+                return nike_eu_us_men_size_mapping[in_size]
+    except KeyError as e:
+        print('failed to get shoe_size {} to {} size {}'.format(in_code, out_code, in_size))
+    return None
+
 def sanitize_style_id(key):
     return key.lower().replace('-', '').replace(' ', '')
 
 def sanitize_size(size):
     return size.strip('.0')
 
-def read_files(fc_file, stockx_file):
+def read_files(fc_file, stockx_file, du_file):
     """Read in two files and produce two dictionaries of stockx and flightclub
     prices
 
@@ -36,12 +165,19 @@ def read_files(fc_file, stockx_file):
     """
     fc_prices = {}
     sx_prices = {}
+    du_prices = {}
 
     with open(fc_file, "r") as rfile:
         fc_prices_presantize = json.loads(rfile.read())
 
     for key in fc_prices_presantize:
         fc_prices[sanitize_style_id(key)] = fc_prices_presantize[key]
+
+    with open(du_file, "r") as rfile:
+        du_prices_presanitize = json.loads(rfile.read())
+
+    for key in du_prices_presanitize:
+        du_prices[sanitize_style_id(key)] = du_prices_presanitize[key]
 
     with open(stockx_file, "r") as rfile:
         stockx_reader = csv.reader(rfile, delimiter=',', quotechar='\"')
@@ -77,9 +213,9 @@ def read_files(fc_file, stockx_file):
             else:
                 print("{} (url: {}) has None style ID".format(name, url))
 
-    return fc_prices, sx_prices
+    return fc_prices, sx_prices, du_prices
 
-def match_items(fc_prices, sx_prices):
+def match_items(fc_prices, sx_prices, du_prices):
     """Combine given dictionaries of fc prices and stockx prices and produce
     matched items.
 
@@ -92,30 +228,58 @@ def match_items(fc_prices, sx_prices):
     """
     matches = {}
     total_matches = 0
-    total_model_matches = 0
 
-    for style_id in fc_prices:
-        if style_id in sx_prices:
-            total_model_matches += 1
-            for size in fc_prices[style_id]:
-                # TODO: strip this awkward float - str match
-                sx_size = sanitize_size(size)
-                if sx_size in sx_prices[style_id]:
-                    total_matches += 1
-                    fc_item = fc_prices[style_id][size]
-                    sx_item = sx_prices[style_id][sx_size]
-                    if not style_id in matches:
-                        matches[style_id] = {
-                            sx_size: {
-                                "fc": fc_item,
-                                "sx": sx_item
-                            }}
-                    else:
-                        matches[style_id][size] = {"fc": fc_item, "sx": sx_item}
+    source_key_map = ["fc", "sx", "du"]
+    idx = 0
 
-    pp.pprint("found {} model matches, {} (model, size) matches".format(
-        total_model_matches, total_matches))
-    return matches, total_model_matches, total_matches
+    for source in [fc_prices, sx_prices, du_prices]:
+        for style_id in source:
+            for size in source[style_id]:
+                # special size handling for du
+                item = source[style_id][size]
+                if idx == 2:
+                    sanitized_size = None
+                    try:
+                        brand = get_brand(source[style_id][size]['title'])
+                        if not brand:
+                            print('failed to get brand from {}'.format(
+                                source[style_id][size]['title']))
+                            break
+                        sanitized_size = sanitize_size(str(get_shoe_size(
+                            float(size),
+                            in_code="eu-{}-men".format(brand),
+                            out_code="us")))
+                    except ValueError as e:
+                        continue
+                    if not sanitized_size or sanitized_size.lower() == "none":
+                        print('failed to find matching size for {}'.format(source[style_id][size]))
+                        continue
+
+                    item['size_us'] = sanitized_size
+                else:
+                    sanitized_size = sanitize_size(size)
+
+                if style_id not in matches:
+                    matches[style_id] = {
+                        sanitized_size: {
+                            source_key_map[idx]: item
+                        }}
+                elif sanitized_size not in matches[style_id]:
+                    matches[style_id][sanitized_size] = {
+                        source_key_map[idx]: item
+                    }
+                else:
+                    matches[style_id][sanitized_size][source_key_map[idx]] = item
+        idx += 1
+
+    for key in matches:
+        for size in matches[key]:
+            if len(matches[key][size].keys()) > 1:
+                total_matches += 1
+
+    pp.pprint("found {} (model, size) listed on at least two sites".format(
+        total_matches))
+    return matches, total_matches
 
 def find_margin(matches):
     """Given the combined prices from sx and fc produce a dict of items with
@@ -131,7 +295,6 @@ def find_margin(matches):
     """
     # us to china 
     # du_shipping_fee = 20
-    # du_commission_rate = 0.095
 
     # china to us
     # du_batch_size = 3
@@ -139,9 +302,16 @@ def find_margin(matches):
     # du_batch_fee = 106
     # 90 - 5kg + 16 / kg
 
+    # pp.pprint(matches)
+
+    du_shipping_fee = 16
+    du_commission_rate = 0.095
+
     sx_threshold = 50
     sx_bid_commission = 13.95
+
     fc_commission_rate = 0.2
+    
     cut_in_tick = 1
 
     total_model_size_pairs = 0
@@ -152,18 +322,65 @@ def find_margin(matches):
             total_model_size_pairs += 1
             item = matches[style_id][size]
 
-            # eligible items from stockx
-            if item['sx']['best_ask'] and item['sx']['best_bid']:
-                if int(item['sx']['sales_last_72']) > sx_threshold:
+            if len(item.keys()) < 2:
+                continue
 
-                    sell_px = float(item['fc']['px'])
-                    if 'sell_px_highest' in item['fc']:
-                        sell_px = min(sell_px, float(item['fc']['sell_px_highest']))
-                    if 'sell_px_market' in item['fc']:
-                        sell_px = min(sell_px, float(item['fc']['sell_px_market']))
-                    sell_link = ''
-                    if 'sell_id' in item['fc']:
-                        sell_link = 'https://sell.flightclub.com/products/{}'.format(item['fc']['sell_id'])
+            name = ''
+            release_date = ''
+            if 'sx' in item:
+                name = item['sx']['name']
+            elif 'fc' in item:
+                name = item['fc']['name']
+                release_date = item['fc']['release_date']
+            elif 'du' in item:
+                name = item['du']['title']
+
+            match_item = {
+                'style_id': style_id,
+                'name': name,
+                'shoe_size': size,
+                'release_date': release_date
+            }
+
+            if 'fc' in item:
+                sell_px = float(item['fc']['px'])
+                if 'sell_px_highest' in item['fc']:
+                    sell_px = min(sell_px, float(item['fc']['sell_px_highest']))
+                if 'sell_px_market' in item['fc']:
+                    sell_px = min(sell_px, float(item['fc']['sell_px_market']))
+                sell_link = ''
+                if 'sell_id' in item['fc']:
+                    sell_link = 'https://sell.flightclub.com/products/{}'.format(item['fc']['sell_id'])
+
+                fc_url_with_size = item['fc']['url'] + '?size=' + size
+                match_item['fc_list_px'] = float(item['fc']['px'])
+                match_item['fc_sell_px'] = sell_px
+                match_item['fc_sell_url'] = sell_link
+                match_item['fc_url'] = fc_url_with_size
+
+            if 'sx' in item:
+                match_item['sx_best_bid'] = item['sx']['best_bid']
+                match_item['sx_best_ask'] = item['sx']['best_ask']
+                match_item['sx_volume_last_72'] = item['sx']['sales_last_72']
+                match_item['sx_url'] = item['sx']['url']
+                match_item['sx_transactions'] = item['sx']['sx_transactions'] if 'sx_transactions' in item['sx'] else []
+
+            if 'du' in item:
+                match_item['du_price_usd'] = get_spot_fx(
+                    item['du']['px'], 'CNY', 'USD')
+                match_item['du_url'] = item['du']['product_id_url']
+                match_item['du_size_chinese'] = item['du']['size']
+
+            crossing_margin = 0.0
+            crossing_margin_rate = 0.0
+            adding_margin = 0.0
+            adding_margin_rate = 0.0
+
+            # sx and fc
+            if 'sx' in item and item['sx']['best_ask'] and item['sx']['best_bid']:
+                # if int(item['sx']['sales_last_72']) > sx_threshold:
+                if 'fc' in item:
+                    sell_px = match_item['fc_sell_px']
 
                     crossing_margin = sell_px * (1 - fc_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission
                     crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
@@ -175,31 +392,32 @@ def find_margin(matches):
                         adding_margin = 0
                         adding_margin_rate = 0
 
-                    fc_url_with_size = item['fc']['url'] + '?size=' + size
-                    match_item = {
-                        'style_id': item['sx']['style_id_ori'],
-                        'name': item['sx']['name'],
-                        'shoe_size': sanitize_size(size),
+                    match_item['action'] = 'sx->fc'
+                
+                if 'du' in item:
+                    sell_px = match_item['du_price_usd']
 
-                        'fc_list_px': float(item['fc']['px']),
-                        'fc_sell_px': sell_px,
-                        'fc_sell_url': sell_link,
-                        'fc_url': fc_url_with_size,
+                    val = sell_px * (1 - du_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission - du_shipping_fee
+                    if val > crossing_margin:
+                        crossing_margin = val
+                        crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
 
-                        'sx_best_bid': item['sx']['best_bid'],
-                        'sx_best_ask': item['sx']['best_ask'],
-                        'sx_volume_last_72': item['sx']['sales_last_72'],
-                        'sx_url': item['sx']['url'],
-                        'sx_transactions': item['sx']['sx_transactions']
-                            if 'sx_transactions' in item['sx'] else [],
+                        if item['sx']['best_bid'] > 0:
+                            adding_margin = sell_px * (1 - du_commission_rate) - float(item['sx']['best_bid']) - (cut_in_tick + sx_bid_commission + du_shipping_fee)
+                            adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick)
+                        else:
+                            adding_margin = 0
+                            adding_margin_rate = 0
 
-                        'crossing_margin': crossing_margin,
-                        'crossing_margin_rate': crossing_margin_rate,
-                        'adding_margin': adding_margin,
-                        'adding_margin_rate': adding_margin_rate
-                    }
-                    margins[style_id + ' ' + size] = match_item
-    # pp.pprint(margins)
+                        match_item['action'] = 'sx->du'
+
+                match_item['crossing_margin'] = crossing_margin
+                match_item['crossing_margin_rate'] = crossing_margin_rate
+                match_item['adding_margin'] = adding_margin
+                match_item['adding_margin_rate'] = adding_margin_rate
+
+                margins[style_id + ' ' + size] = match_item
+
     return margins
 
 def annotate_transaction_history(sx_prices, data_prefix="../../data/stockx/"):
@@ -329,10 +547,13 @@ def generate_html_report(score_sorted_item, limit, **run_info):
     text += ("<table>"
                 "<tr>"
                     "<th>Name</th>"
+                    "<th>Release</th>"
                     "<th>Size</th>"
                     "<th>StockX</th>"
+                    "<th>Du</th>"
                     "<th>FlightClub: Listed Sell Price</th>"
                     "<th>FlightClub: Sell Market Price</th>"
+                    "<th>Action</th>"
                     "<th>Crossing Margin</th>"
                     "<th>Crossing Margin Rate</th>"
                     "<th>StockX Volume / Day</th>"
@@ -352,19 +573,25 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         "<td>{}</td>"
                         "<td>{}</td>"
                         "<td>{}</td>"
+                        "<td>{}</td>"
+                        "<td>{}</td>"
+                        "<td>{}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{}</td>"
                         "<td>{:.2f}</td>"
                         "<td>{}</td>"
                      "</tr>").format(
-                        shoe['name'], shoe['shoe_size'],
+                        shoe['name'], shoe['release_date'], shoe['shoe_size'],
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['sx_url'], float(shoe['sx_best_ask'])),
-                        "<a href=\"{}\">{:.2f}</a>".format(
+                        "N/A" if not "du_price_usd" in shoe else "<a href=\"{}\">{:.2f}</a> ({})".format(
+                            shoe['du_url'], float(shoe['du_price_usd']), shoe['du_size_chinese']),
+                        "N/A" if not "fc_list_px" in shoe else "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['fc_url'], float(shoe['fc_list_px'])),
-                        "not found" if not shoe['fc_sell_url'] else "<a href=\"{}\">{:.2f}</a>".format(shoe['fc_sell_url'], shoe['fc_sell_px']),
-                        shoe['crossing_margin'], shoe['crossing_margin_rate'],
+                        "N/A" if not 'fc_sell_url' in shoe else "<a href=\"{}\">{:.2f}</a>".format(
+                            shoe['fc_sell_url'], shoe['fc_sell_px']),
+                        shoe["action"], shoe['crossing_margin'], shoe['crossing_margin_rate'],
                         "{:.2f}{}".format(shoe['volume'], ' (approx)' if 'volume_approximated' in shoe else ''),
                         shoe['score'], shoe['style_id'])
             report_cnt += 1
@@ -376,9 +603,10 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    fc_file = "../../data/flightclub/flightclub.20190616.txt"
-    sx_file = "../../data/stockx/20190616-144429/promising/best_prices.txt"
-    sx_transactions_folder = "../../data/stockx/20190616-144429/"
+    fc_file = "../../data/flightclub/flightclub.20190623.txt"
+    sx_file = "../../data/stockx/20190622-095347/promising/best_prices.txt"
+    du_file = "../../data/du/du.20190623.txt"
+    sx_transactions_folder = "../../data/stockx/20190622-095347/"
 
     parser.add_argument(
         "--score_mode",
@@ -397,9 +625,9 @@ if __name__ == "__main__":
 
     runtime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    fc_prices, sx_prices = read_files(fc_file, sx_file)
+    fc_prices, sx_prices, du_prices = read_files(fc_file, sx_file, du_file)
     annotate_transaction_history(sx_prices, sx_transactions_folder)
-    matches, total_model_matches, total_matches = match_items(fc_prices, sx_prices)
+    matches, total_matches = match_items(fc_prices, sx_prices, du_prices)
 
     margins = find_margin(matches)
     score_mode = args.score_mode if args.score_mode else 'multi'
@@ -414,9 +642,8 @@ if __name__ == "__main__":
     if args.emails:
         report = generate_html_report(
             score_sorted_item, args.limit, runtime=runtime, score=score_mode,
-            fc_file=fc_file, sx_file=sx_file,
+            fc_file=fc_file, sx_file=sx_file, du_file=du_file,
             sx_transactions_folder=sx_transactions_folder,
-            total_model_matches=total_model_matches,
             total_model_size_matches=total_matches,
             crossing_margin_cutoff_rate=0.05,
             crossing_margin_cutoff_value=20)

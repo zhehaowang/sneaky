@@ -304,7 +304,7 @@ class DuSpider(scrapy.Spider):
         Don't Ctrl+C twice the application if we want this to be called.
         """
         with open("../../data/du/du.{}.txt".format(
-            datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
+            datetime.datetime.now().strftime("%Y%m%d-%H%M%S")), "w") as wfile:
             wfile.write(json.dumps(self.prices, indent=4, sort_keys=True))
 
         return

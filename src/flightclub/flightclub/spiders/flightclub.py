@@ -305,7 +305,7 @@ class ShoesSpider(scrapy.Spider):
                         self.prices[style_id][size]["sell_px_highest"] = self.sell_prices[style_id][size]["highest"]
 
         with open("../../data/flightclub/flightclub.{}.txt".format(
-            datetime.date.today().strftime("%Y%m%d")), "w") as wfile:
+            datetime.datetime.now().strftime("%Y%m%d-%H%M%S")), "w") as wfile:
             wfile.write(json.dumps(self.prices, indent=4, sort_keys=True))
         
         with open(ShoesSpider.style_id_to_sell_id, "w") as style_id_sell_id_map_file:
