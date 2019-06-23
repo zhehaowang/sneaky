@@ -9,7 +9,7 @@ import datetime
 import os
 
 class ShoesSpider(scrapy.Spider):
-    name = 'shoes'
+    name = 'flightclub'
     allowed_domains = ['www.flightclub.com', 'sell.flightclub.com']
     start_urls = ['https://www.flightclub.com/']
 
