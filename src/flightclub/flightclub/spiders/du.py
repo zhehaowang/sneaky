@@ -22,6 +22,10 @@ class DuSpider(scrapy.Spider):
     token_file = './du_token.txt'
 
     def start_requests(self):
+        """
+        Send du app login request if token not present, otherwise use token file
+        and send get list request
+        """
         self.timetamp = '1561177360584' # '1561250002466'
         self.headers = {
             # common http fixed
@@ -46,7 +50,7 @@ class DuSpider(scrapy.Spider):
         self.cookie = None
         self.js_ctx = None
         self.prices = {}
-        self.max_pages = 2
+        self.max_pages = 400
 
         self.max_history_page = 3
         self.history_queries = {}
@@ -65,6 +69,9 @@ class DuSpider(scrapy.Spider):
                 yield self.get_list_request(page_id)
 
     def get_login_request(self):
+        """
+        Generate a login post request with headers and form elems
+        """
         login_form = {
             # fixed
             'accessToken': '',
@@ -100,8 +107,11 @@ class DuSpider(scrapy.Spider):
 
     def parse_login(self, response):
         """
-        we can log in with this, but later steps doesn't really require logging
-        in
+        Upon logging in, send get_list request for pages from 1 to configured
+        max pages.
+
+        @note we can log in with this, but later steps doesn't really require
+        logging in
         """
         if response.status != 200:
             print("login http request failed: {}".format(response.status))
@@ -140,6 +150,14 @@ class DuSpider(scrapy.Spider):
                 print("unexpected key {}".format(e))
 
     def get_url(self, target, params):
+        """
+        Helper function to generate a get request to host + target.
+        Populates sign value for the given params and attach it to the request.
+
+        @param  target str to append right after the site url
+        @param  params dict get request url key values
+        @return str the get request url with sign value
+        """
         if not self.js_ctx:
             with open('sign.js', 'r', encoding='utf-8')as f:
                 all_ = f.read()
@@ -158,6 +176,12 @@ class DuSpider(scrapy.Spider):
         return url
 
     def get_list_request(self, page_id):
+        """
+        populates a get_list request for the given page id
+
+        @param  page_id int
+        @return Request object ready to be yielded
+        """
         params = {
             "size": "[]",
             "title": "",
@@ -174,6 +198,10 @@ class DuSpider(scrapy.Spider):
             url, headers=self.headers, callback=self.parse_list)
 
     def parse_list(self, response):
+        """
+        retrieve the product_ids from the get_list response and send get_details
+        for each product_id
+        """
         if response.status != 200:
             print('http get_list request failed')
         else:
@@ -202,6 +230,10 @@ class DuSpider(scrapy.Spider):
         return
 
     def parse_item(self, response, product_id, product_id_url):
+        """
+        parse the product details for per style_id, size prices, and start
+        sending last_transaction queries
+        """
         if response.status != 200:
             print('http get_item request failed')
         else:
@@ -245,6 +277,17 @@ class DuSpider(scrapy.Spider):
         return
 
     def get_last_sold_items(self, style_id, product_id, last_id=None):
+        """
+        populate a last_transaction query for the given style_id, product_id and
+        last_id.
+
+        @param  style_id   str
+        @param  product_id int
+        @param  last_id    str the last_id returned by the previous
+            last_transactions request. This is usually the number of seconds
+            since epoch
+        @return Request last_transaction request ready to be dispatched
+        """
         params = {
             'limit': '20',
             'productId': str(product_id)
@@ -255,6 +298,14 @@ class DuSpider(scrapy.Spider):
         return Request(url, callback=lambda r, style_id=style_id, product_id=product_id: self.parse_transactions(r, style_id, product_id))
 
     def timestr_to_epoch(self, timestr, timenow=None):
+        """
+        helper function to convert last_transaction time format to epoch
+
+        @param timestr  str the input Chinese string time offset from now
+        @param timenow  datetime (optional) if specified use specified time as
+            opposed to actual time now
+        @return str iso8601 time string corresponding to the time of the input
+        """
         time_now = timenow if timenow else datetime.datetime.now()
         
         match = re.match(r'([0-9]+)分钟前', timestr)
@@ -280,6 +331,11 @@ class DuSpider(scrapy.Spider):
         print('failed to parse timestr {}'.format(timestr))
 
     def parse_transactions(self, response, style_id, product_id):
+        """
+        populate per-style-id per-size transaction history of one product_id.
+        if haven't reached configured maximum number of pages to get
+        transactions for, send out a subsequent last_transactions request
+        """
         if response.status != 200:
             print('http last_sold_list request failed')
         else:
