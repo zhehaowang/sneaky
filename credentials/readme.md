@@ -1,0 +1,1 @@
+stub folder for scraper credentials
