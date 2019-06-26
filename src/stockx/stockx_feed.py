@@ -349,30 +349,27 @@ if __name__ == "__main__":
                                     "relevant_ask_total_size": ask_size
                                 }
 
-                                # distilled view
+                                # distilled view, in current workflow this is
+                                # all we care about
+                                release_date = item["release_date"] if "release_date" in item else ""
+                                item_to_add = {
+                                    "best_bid": best_bid,
+                                    "best_ask": best_ask,
+                                    "sales_last_72": int(item["sales_last_72"]),
+                                    "search_term": line,
+                                    "url": item["url"],
+                                    "name": item["name"],
+                                    "style_id": item["style_id"],
+                                    "release_date": release_date
+                                }
                                 if style_id in best_prices:
-                                    best_prices[style_id][shoe_size] = {
-                                        "best_bid": best_bid,
-                                        "best_ask": best_ask,
-                                        "sales_last_72": int(item["sales_last_72"]),
-                                        "search_term": line,
-                                        "url": item["url"],
-                                        "name": item["name"],
-                                        "style_id": item["style_id"]
-                                    }
+                                    best_prices[style_id][shoe_size] = item_to_add
                                 else:
                                     best_prices[style_id] = {
-                                        shoe_size: {
-                                            "best_bid": best_bid,
-                                            "best_ask": best_ask,
-                                            "sales_last_72": int(item["sales_last_72"]),
-                                            "search_term": line,
-                                            "url": item["url"],
-                                            "name": item["name"],
-                                            "style_id": style_id
-                                        }}
+                                        shoe_size: item_to_add}
+
                                 bests_file.write(
-                                    "{},{},{},{},{},{},{},{}\n".format(
+                                    "{},{},{},{},{},{},{},{},{}\n".format(
                                         item["name"],
                                         item["url"],
                                         style_id,
@@ -380,7 +377,8 @@ if __name__ == "__main__":
                                         best_bid,
                                         best_ask,
                                         int(item["sales_last_72"]),
-                                        line))
+                                        line,
+                                        release_date))
 
                         except TypeError as e:
                             print(e)

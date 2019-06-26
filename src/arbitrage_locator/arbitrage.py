@@ -189,27 +189,25 @@ def read_files(fc_file, stockx_file, du_file):
             best_bid = float(row[4])
             best_ask = float(row[5])
             sx_volume_last_72 = int(row[6])
+            release_date = ''
+            if len(row) > 8:
+                release_date = row[8]
             if style_id.lower() != "none":
                 if best_ask > 0:
                     style_id_san = sanitize_style_id(style_id)
+                    sx_item = {
+                        "name": name,
+                        "url": url,
+                        "best_bid": best_bid,
+                        "best_ask": best_ask,
+                        "sales_last_72": sx_volume_last_72,
+                        "style_id_ori": style_id,
+                        "release_date": release_date
+                    }
                     if style_id_san in sx_prices:
-                        sx_prices[style_id_san][shoe_size] = {
-                            "name": name,
-                            "url": url,
-                            "best_bid": best_bid,
-                            "best_ask": best_ask,
-                            "sales_last_72": sx_volume_last_72,
-                            "style_id_ori": style_id
-                        }
+                        sx_prices[style_id_san][shoe_size] = sx_item
                     else:
-                        sx_prices[style_id_san] = {shoe_size: {
-                            "name": name,
-                            "url": url,
-                            "best_bid": best_bid,
-                            "best_ask": best_ask,
-                            "sales_last_72": sx_volume_last_72,
-                            "style_id_ori": style_id
-                        }}
+                        sx_prices[style_id_san] = {shoe_size: sx_item}
             else:
                 print("{} (url: {}) has None style ID".format(name, url))
 
@@ -329,11 +327,16 @@ def find_margin(matches):
             release_date = ''
             if 'sx' in item:
                 name = item['sx']['name']
+                if 'release_date' in item['sx']:
+                    release_date = item['sx']['release_date']
             elif 'fc' in item:
                 name = item['fc']['name']
-                release_date = item['fc']['release_date']
+                if 'release_date' in item['fc']:
+                    release_date = item['fc']['release_date']
             elif 'du' in item:
                 name = item['du']['title']
+                if 'release_date' in item['du']:
+                    release_date = item['du']['release_date']
 
             match_item = {
                 'style_id': style_id,
