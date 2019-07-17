@@ -26,18 +26,20 @@ def parse_cookie_str(cookie_str):
 class Stockx():
     API_BASE = 'https://stockx.com/api'
 
-    def __init__(self):
+    def __init__(self, log_all=False):
         self.customer_id = None
         self.headers = None
         self.cookies = parse_cookie_str("__cfduid=d872b61c169ed04ad1c8fc249f8d7c3141559356547; _ga=GA1.2.144777368.1559356549; cto_lwid=9de93bee-bd8b-4507-8e21-795b787f61a9; _gcl_au=1.1.1951555545.1559356550; _tl_duuid=069a06ef-baee-4032-a7f1-2171bbd61b2d; tracker_device=51682130-9b63-414e-be28-25a499a56402; IR_gbd=stockx.com; ajs_group_id=null; _fbp=fb.1.1559356553059.129148643; rskxRunCookie=0; rCookie=7305g4oqqe449qv5wkc089; _pxhd=d844d67f707bc84ebb56a18e99c91b32e871953686b336a39217548c2419eaa5:04c25671-8417-11e9-b057-edcb5fe9ed72; _scid=d8f68103-065d-4005-8b2e-4900caf6d42c; stockx_bid_ask_spread_seen=true; stockx_multi_edit_seen=true; show_bid_ask_spread=false; show_below_retail=true; stockx_seen_ask_new_info=true; _gac_UA-67038415-1=1.1560037346.CjwKEAjwue3nBRCCyrqY0c7bw2wSJACSlmGZilf6CAcsMxFJm4ZJY59NWo8_11ZFC6RBA3iad0wFTxoC_GDw_wcB; _gcl_aw=GCL.1560037347.CjwKEAjwue3nBRCCyrqY0c7bw2wSJACSlmGZilf6CAcsMxFJm4ZJY59NWo8_11ZFC6RBA3iad0wFTxoC_GDw_wcB; _gid=GA1.2.1923016505.1560479845; stockx_learn_more_dismiss=true; _sctr=1|1560398400000; _pxvid=04c25671-8417-11e9-b057-edcb5fe9ed72; stockx_default_sneakers_size=7.5; _sp_ses.1a3e=*; _tl_csid=60d572b7-7e20-4baf-879d-f9834ecea514; _pk_ref.421.1a3e=%5B%22%22%2C%22%22%2C1560573414%2C%22https%3A%2F%2Fwww.google.com%2F%22%5D; _pk_ses.421.1a3e=*; _tl_auid=5cf1e486049897000f690756; _tl_sid=5d0475e76c0fee00a10a0786; _gat=1; is_gdpr=false; cookie_policy_accepted=true; show_all_as_number=false; brand_tiles_version=v1; show_bid_education=v2; show_bid_education_times=1; mobile_nav_v2=true; multi_edit_option=beatLowestAskBy; product_page_v2=watches%2Chandbags; show_watch_modal=true; _derived_epik=dj0yJnU9V1lJYXRTeU16MGF2eHl2VlZFOXZKOWFOZHNwb3ZHb2cmbj1nODlpN2RqRUZxSGF3azJsY2d1X25nJm09MSZ0PUFBQUFBRjBFZDBJ; _sp_id.1a3e=1e9c87cf-e416-485c-8050-e01d906c916d.1559356549.17.1560573781.1560562849.f04bf985-e96c-41a2-b57f-11c09e23b134; stockx_user_logged_in=true; token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdG9ja3guY29tIiwic3ViIjoic3RvY2t4LmNvbSIsImF1ZCI6IndlYiIsImFwcF9uYW1lIjoiSXJvbiIsImFwcF92ZXJzaW9uIjoiMi4wLjAiLCJpc3N1ZWRfYXQiOiIyMDE5LTA2LTE1IDA0OjQzOjAwIiwiY3VzdG9tZXJfaWQiOiI3NDk5MjE1IiwiZW1haWwiOiIxMjEzODY2OTY0QHFxLmNvbSIsImN1c3RvbWVyX3V1aWQiOiI2ZTEyNTlhMS04ZTU4LTExZTktODg4MC0xMmRlYjkwOWU5N2MiLCJmaXJzdE5hbWUiOiJaaGVoYW8iLCJsYXN0TmFtZSI6IldhbmciLCJnZHByX3N0YXR1cyI6bnVsbCwiZGVmYXVsdF9jdXJyZW5jeSI6IlVTRCIsImxhbmd1YWdlIjoiZW4tVVMiLCJzaGlwX2J5X2RhdGUiOm51bGwsInZhY2F0aW9uX2RhdGUiOm51bGwsInByb2R1Y3RfY2F0ZWdvcnkiOiJzdHJlZXR3ZWFyIiwiaXNfYWRtaW4iOiIwIiwic2Vzc2lvbl9pZCI6IjEzMDkxMDQxNzAwMzI0NDkxNTgwIiwiZXhwIjoxNTYxMTc4NTgwLCJhcGlfa2V5cyI6W119.Ak-dRv4lRF2PDUwzLkTY_B3RA5zltRGiTnWzx8hJBCQ; fs_uid=rs.fullstory.com`J4TYT`6215852469977088:6753299780009984`6e1259a1-8e58-11e9-8880-12deb909e97c`; _tl_uid=6e1259a1-8e58-11e9-8880-12deb909e97c; ajs_user_id=%226e1259a1-8e58-11e9-8880-12deb909e97c%22; ajs_anonymous_id=%22dd363046-f59f-485a-bcfa-69a0be9cacad%22; stockx_selected_currency=USD; stockx_selected_locale=en_US; lastRskxRun=1560573781170; _pk_id.421.1a3e=0102423b573ff79c.1559356551.16.1560573781.1560573412.; tl_sopts_60d572b7-7e20-4baf-879d-f9834ecea514_p_p_n=JTJG; tl_sopts_60d572b7-7e20-4baf-879d-f9834ecea514_p_p_l_h=aHR0cHMlM0ElMkYlMkZzdG9ja3guY29tJTJG; tl_sopts_60d572b7-7e20-4baf-879d-f9834ecea514_p_p_l_t=U3RvY2tYJTNBJTIwQnV5JTIwYW5kJTIwU2VsbCUyMFNuZWFrZXJzJTJDJTIwU3RyZWV0d2VhciUyQyUyMEhhbmRiYWdzJTJDJTIwV2F0Y2hlcw==; tl_sopts_60d572b7-7e20-4baf-879d-f9834ecea514_p_p_l=JTdCJTIyaHJlZiUyMiUzQSUyMmh0dHBzJTNBJTJGJTJGc3RvY2t4LmNvbSUyRiUyMiUyQyUyMmhhc2glMjIlM0ElMjIlMjIlMkMlMjJzZWFyY2glMjIlM0ElMjIlMjIlMkMlMjJob3N0JTIyJTNBJTIyc3RvY2t4LmNvbSUyMiUyQyUyMnByb3RvY29sJTIyJTNBJTIyaHR0cHMlM0ElMjIlMkMlMjJwYXRobmFtZSUyMiUzQSUyMiUyRiUyMiUyQyUyMnRpdGxlJTIyJTNBJTIyU3RvY2tYJTNBJTIwQnV5JTIwYW5kJTIwU2VsbCUyMFNuZWFrZXJzJTJDJTIwU3RyZWV0d2VhciUyQyUyMEhhbmRiYWdzJTJDJTIwV2F0Y2hlcyUyMiU3RA==; tl_sopts_60d572b7-7e20-4baf-879d-f9834ecea514_p_p_v_d=MjAxOS0wNi0xNVQwNCUzQTQzJTNBMDEuMTkxWg==; IR_9060=1560573762412%7C0%7C1560573415364%7C%7C; IR_PI=e9ea8dde-4f7d-11e9-a97b-12cd5acec8a1%7C1560660162412")
         self.last_query_time = None
 
         # min space in between each request we send
-        self.throttle_seconds = 1
+        self.throttle_seconds = 0.1
         # retry timeout 500s error
         self.server_retry_seconds = 3
         # retry timeout 400s error
         self.client_retry_seconds = 20
+
+        self.log_all = log_all
 
     def __api_query(self, request_type, command, data=None):
         if self.throttle_seconds > 0 and self.last_query_time:
@@ -69,6 +71,9 @@ class Stockx():
             return
         self.last_query_time = datetime.datetime.now()
         if response.status_code == 200:
+            if self.log_all:
+                # TODO: fill in write all logic
+                pass
             return response.json()
         elif int(response.status_code) // 100 == 5:
             # series 5 error, their stuff. We wait a bit.
