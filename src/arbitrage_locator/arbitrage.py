@@ -279,7 +279,16 @@ def match_items(fc_prices, sx_prices, du_prices):
         total_matches))
     return matches, total_matches
 
-def find_margin(matches):
+def get_du_transaction_rate(start_time, transactions):
+    for i in range(len(transactions) - 1, -1, -1):
+        if transactions[i]["time"]:
+            transaction_time = datetime.datetime.strptime(
+                transactions[i]["time"], "%Y-%m-%dT%H:%M:%S.%f")
+            return (
+                i / (start_time - transaction_time).total_seconds() * 3600 * 24)
+    return 0
+
+def find_margin(matches, du_crawl_time):
     """Given the combined prices from sx and fc produce a dict of items with
     crossing margin computed.
 
@@ -373,6 +382,8 @@ def find_margin(matches):
                     item['du']['px'], 'CNY', 'USD')
                 match_item['du_url'] = item['du']['product_id_url']
                 match_item['du_size_chinese'] = item['du']['size']
+                match_item['du_volume'] = get_du_transaction_rate(du_crawl_time, item['du']['transactions']) if 'transactions' in item['du'] else 0
+                match_item['du_crawl_time'] = du_crawl_time
 
             crossing_margin = 0.0
             crossing_margin_rate = 0.0
@@ -466,12 +477,39 @@ def annotate_score(margins, score_mode):
             score, volume = score_crossing_margin_rate(margins[item])
         elif score_mode == 'multi':
             score, volume = score_margin_single_entity_transactions_size(margins[item])
+        elif score_mode == 'du_volume_volatility':
+            score, volume = score_crossing_margin_rate_du_volume(margins[item])
         margins[item]['score'] = score
         margins[item]['volume'] = volume
     return
 
 def score_crossing_margin_rate(item):
     return item['crossing_margin_rate'], 0
+
+def score_crossing_margin_rate_du_volume(item, volume_cap=2, volume_floor=0.5):
+    volume = 0
+    score = 0
+    # stockx items are blocked out from report in this step
+    if 'du_volume' in item:
+        # volume discount
+        volume = max(min(item['du_volume'], volume_cap), volume_floor)
+        score = item['crossing_margin_rate'] * volume
+        if item['du_volume'] == 0:
+            item['volume_approximated'] = True
+
+        # release date discount
+        if 'release_date' in item and item['release_date'] and item['release_date'].lower() != 'none':
+            release_date = datetime.datetime.strptime(
+                item['release_date'], "%Y-%m-%d")
+            dates_since_release = (
+                item['du_crawl_time'] - release_date).total_seconds() / 2400 / 24
+            if dates_since_release < 0:
+                score *= 0.1
+            elif dates_since_release < 14:
+                score *= 0.3
+            elif dates_since_release < 30:
+                score *= 0.5
+    return score, volume
 
 def score_margin_single_entity_transactions_size(item):
     """An item with a high crossing margin rate, low single entity price, high
@@ -559,7 +597,7 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                     "<th>Action</th>"
                     "<th>Crossing Margin</th>"
                     "<th>Crossing Margin %</th>"
-                    "<th>StockX Daily Volume</th>"
+                    "<th>Daily Volume</th>"
                     "<th>Score</th>"
                     "<th>Style ID</th>"
                 "</tr>")
@@ -606,10 +644,11 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    fc_file = "../../data/flightclub/flightclub.20190623.txt"
-    sx_file = "../../data/stockx/20190622-095347/promising/best_prices.txt"
-    du_file = "../../data/du/du.20190623.txt"
-    sx_transactions_folder = "../../data/stockx/20190622-095347/"
+    fc_file = "../../data/flightclub.data.20190716-231126/flightclub.txt"
+    sx_file = "../../data/stockx/20190715-232450/promising/best_prices.txt"
+    du_file = "../../data/du/du.20190719-225933.txt"
+    du_crawl_time = datetime.datetime.strptime(os.path.basename(du_file).split('.')[1], "%Y%m%d-%H%M%S")
+    sx_transactions_folder = "../../data/stockx/20190715-232450/"
 
     parser.add_argument(
         "--score_mode",
@@ -632,8 +671,8 @@ if __name__ == "__main__":
     annotate_transaction_history(sx_prices, sx_transactions_folder)
     matches, total_matches = match_items(fc_prices, sx_prices, du_prices)
 
-    margins = find_margin(matches)
-    score_mode = args.score_mode if args.score_mode else 'multi'
+    margins = find_margin(matches, du_crawl_time)
+    score_mode = args.score_mode if args.score_mode else 'du_volume_volatility'
     annotate_score(margins, score_mode)
 
     score_sorted_item = sorted(
