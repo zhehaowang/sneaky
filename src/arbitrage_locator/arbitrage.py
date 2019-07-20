@@ -177,6 +177,8 @@ def read_files(fc_file, stockx_file, du_file):
         du_prices_presanitize = json.loads(rfile.read())
 
     for key in du_prices_presanitize:
+        for size in du_prices_presanitize[key]:
+            du_prices_presanitize[key][size]['orig_style_id'] = key
         du_prices[sanitize_style_id(key)] = du_prices_presanitize[key]
 
     with open(stockx_file, "r") as rfile:
@@ -288,6 +290,19 @@ def get_du_transaction_rate(start_time, transactions):
                 i / (start_time - transaction_time).total_seconds() * 3600 * 24)
     return 0
 
+def get_du_sell_val(sell_px):
+    du_shipping_fee = 16
+    du_commission_rate = 0.095
+    du_tech_service = 0.035
+    du_transfer = 0.01
+    du_packaging = get_spot_fx(8, 'CNY', 'USD')
+    du_verification = get_spot_fx(15, 'CNY', 'USD')
+    du_service = get_spot_fx(10, 'CNY', 'USD')
+
+    sx_bid_commission = 13.95
+
+    return sell_px * (1 - du_commission_rate - du_tech_service - du_transfer) - sx_bid_commission - du_shipping_fee - du_packaging - du_verification - du_service
+
 def find_margin(matches, du_crawl_time):
     """Given the combined prices from sx and fc produce a dict of items with
     crossing margin computed.
@@ -308,11 +323,6 @@ def find_margin(matches, du_crawl_time):
     
     # du_batch_fee = 106
     # 90 - 5kg + 16 / kg
-
-    # pp.pprint(matches)
-
-    du_shipping_fee = 16
-    du_commission_rate = 0.095
 
     sx_threshold = 50
     sx_bid_commission = 13.95
@@ -384,6 +394,8 @@ def find_margin(matches, du_crawl_time):
                 match_item['du_size_chinese'] = item['du']['size']
                 match_item['du_volume'] = get_du_transaction_rate(du_crawl_time, item['du']['transactions']) if 'transactions' in item['du'] else 0
                 match_item['du_crawl_time'] = du_crawl_time
+                if 'orig_style_id' in item['du']:
+                    match_item['style_id'] = item['du']['orig_style_id']
 
             crossing_margin = 0.0
             crossing_margin_rate = 0.0
@@ -411,13 +423,13 @@ def find_margin(matches, du_crawl_time):
                 if 'du' in item:
                     sell_px = match_item['du_price_usd']
 
-                    val = sell_px * (1 - du_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission - du_shipping_fee
+                    val = get_du_sell_val(sell_px) - float(item['sx']['best_ask'])
                     if val > crossing_margin:
                         crossing_margin = val
                         crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
 
                         if item['sx']['best_bid'] > 0:
-                            adding_margin = sell_px * (1 - du_commission_rate) - float(item['sx']['best_bid']) - (cut_in_tick + sx_bid_commission + du_shipping_fee)
+                            adding_margin = get_du_sell_val(sell_px) - float(item['sx']['best_bid']) - cut_in_tick
                             adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick)
                         else:
                             adding_margin = 0
@@ -644,9 +656,9 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    fc_file = "../../data/flightclub.data.20190716-231126/flightclub.txt"
+    fc_file = "../../data/flightclub.dummy.txt"
     sx_file = "../../data/stockx/20190715-232450/promising/best_prices.txt"
-    du_file = "../../data/du/du.20190719-225933.txt"
+    du_file = "../../data/du/du.20190720-002330.txt"
     du_crawl_time = datetime.datetime.strptime(os.path.basename(du_file).split('.')[1], "%Y%m%d-%H%M%S")
     sx_transactions_folder = "../../data/stockx/20190715-232450/"
 
