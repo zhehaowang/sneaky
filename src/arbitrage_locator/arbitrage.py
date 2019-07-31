@@ -20,6 +20,7 @@ from email.mime.text import MIMEText
 pp = pprint.PrettyPrinter()
 
 fx_rates = {}
+sx_bid_commission = 13.95
 
 def get_spot_fx(in_amount, in_curr, out_curr):
     if not (in_curr, out_curr) in fx_rates:
@@ -291,17 +292,28 @@ def get_du_transaction_rate(start_time, transactions):
     return 0
 
 def get_du_sell_val(sell_px):
-    du_shipping_fee = 16
-    du_commission_rate = 0.095
-    du_tech_service = 0.035
-    du_transfer = 0.01
-    du_packaging = get_spot_fx(8, 'CNY', 'USD')
-    du_verification = get_spot_fx(15, 'CNY', 'USD')
-    du_service = get_spot_fx(10, 'CNY', 'USD')
+    return sell_px - get_du_extra_cost_for_sell_px(sell_px)
 
-    sx_bid_commission = 13.95
+du_shipping_fee = 16
+du_commission_rate = 0.095
+du_tech_service_rate = 0.035
+du_transfer_rate = 0.01
 
-    return sell_px * (1 - du_commission_rate - du_tech_service - du_transfer) - sx_bid_commission - du_shipping_fee - du_packaging - du_verification - du_service
+du_flat_fee_cny = 33
+
+def get_du_extra_cost_for_sell_px(sell_px):
+    return sell_px * (du_commission_rate + du_tech_service_rate + du_transfer_rate) + sx_bid_commission + du_shipping_fee + get_spot_fx(du_flat_fee_cny, 'CNY', 'USD')
+
+def find_du_target_sellpx_cny(buy_cost_usd, target_percent):
+    buy_cost_cny = get_spot_fx(buy_cost_usd, 'USD', 'CNY')
+    return (buy_cost_cny * (1 + target_percent) + du_flat_fee_cny + get_spot_fx(du_shipping_fee, 'USD', 'CNY')) / (1 - du_commission_rate + du_tech_service_rate - du_transfer_rate)
+
+def get_fc_sell_val(sell_px):
+    return sell_px - get_fc_extra_cost_for_sell_px(sell_px)
+
+def get_fc_extra_cost_for_sell_px(sell_px):
+    fc_commission_rate = 0.2
+    return sell_px * fc_commission_rate + sx_bid_commission
 
 def find_margin(matches, du_crawl_time):
     """Given the combined prices from sx and fc produce a dict of items with
@@ -325,10 +337,6 @@ def find_margin(matches, du_crawl_time):
     # 90 - 5kg + 16 / kg
 
     sx_threshold = 50
-    sx_bid_commission = 13.95
-
-    fc_commission_rate = 0.2
-    
     cut_in_tick = 1
 
     total_model_size_pairs = 0
@@ -383,11 +391,13 @@ def find_margin(matches, du_crawl_time):
             if 'sx' in item:
                 match_item['sx_best_bid'] = item['sx']['best_bid']
                 match_item['sx_best_ask'] = item['sx']['best_ask']
+                match_item['sx_mid_px'] = (match_item['sx_best_bid'] + match_item['sx_best_ask']) / 2
                 match_item['sx_volume_last_72'] = item['sx']['sales_last_72']
                 match_item['sx_url'] = item['sx']['url']
                 match_item['sx_transactions'] = item['sx']['sx_transactions'] if 'sx_transactions' in item['sx'] else []
 
             if 'du' in item:
+                match_item['du_price_cny'] = item['du']['px']
                 match_item['du_price_usd'] = get_spot_fx(
                     item['du']['px'], 'CNY', 'USD')
                 match_item['du_url'] = item['du']['product_id_url']
@@ -401,6 +411,8 @@ def find_margin(matches, du_crawl_time):
             crossing_margin_rate = 0.0
             adding_margin = 0.0
             adding_margin_rate = 0.0
+            mid_margin = 0.0
+            mid_margin_rate = 0.0
 
             # sx and fc
             if 'sx' in item and item['sx']['best_ask'] and item['sx']['best_bid']:
@@ -408,15 +420,14 @@ def find_margin(matches, du_crawl_time):
                 if 'fc' in item:
                     sell_px = match_item['fc_sell_px']
 
-                    crossing_margin = sell_px * (1 - fc_commission_rate) - float(item['sx']['best_ask']) - sx_bid_commission
-                    crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
+                    crossing_margin = get_fc_sell_val(sell_px) - float(item['sx']['best_ask'])
+                    crossing_margin_rate = crossing_margin / (float(item['sx']['best_ask']) + sx_bid_commission)
 
-                    if item['sx']['best_bid'] > 0:
-                        adding_margin = sell_px * (1 - fc_commission_rate) - float(item['sx']['best_bid']) - (cut_in_tick + sx_bid_commission)
-                        adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick)
-                    else:
-                        adding_margin = 0
-                        adding_margin_rate = 0
+                    adding_margin = get_fc_sell_val(sell_px) - float(item['sx']['best_bid']) - cut_in_tick
+                    adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick + sx_bid_commission)
+
+                    mid_margin = get_fc_sell_val(sell_px) - float(match_item['sx_mid_px'])
+                    mid_margin_rate = mid_margin / (float(match_item['sx_mid_px']) + sx_bid_commission)
 
                     match_item['action'] = 'sx->fc'
                 
@@ -426,21 +437,23 @@ def find_margin(matches, du_crawl_time):
                     val = get_du_sell_val(sell_px) - float(item['sx']['best_ask'])
                     if val > crossing_margin:
                         crossing_margin = val
-                        crossing_margin_rate = crossing_margin / float(item['sx']['best_ask'])
+                        crossing_margin_rate = crossing_margin / (float(item['sx']['best_ask']) + sx_bid_commission)
 
-                        if item['sx']['best_bid'] > 0:
-                            adding_margin = get_du_sell_val(sell_px) - float(item['sx']['best_bid']) - cut_in_tick
-                            adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick)
-                        else:
-                            adding_margin = 0
-                            adding_margin_rate = 0
+                        adding_margin = get_du_sell_val(sell_px) - float(item['sx']['best_bid']) - cut_in_tick
+                        adding_margin_rate = adding_margin / (float(item['sx']['best_bid']) + cut_in_tick + sx_bid_commission)
 
+                        mid_margin = get_du_sell_val(sell_px) - float(match_item['sx_mid_px'])
+                        mid_margin_rate = mid_margin / (float(match_item['sx_mid_px']) + sx_bid_commission)
+
+                        match_item['du_markout_30p_cny'] = find_du_target_sellpx_cny(float(match_item['sx_mid_px']) + sx_bid_commission, 0.3)
                         match_item['action'] = 'sx->du'
 
                 match_item['crossing_margin'] = crossing_margin
                 match_item['crossing_margin_rate'] = crossing_margin_rate
                 match_item['adding_margin'] = adding_margin
                 match_item['adding_margin_rate'] = adding_margin_rate
+                match_item['mid_margin'] = mid_margin
+                match_item['mid_margin_rate'] = mid_margin_rate
 
                 margins[style_id + ' ' + size] = match_item
 
@@ -587,12 +600,12 @@ def score_margin_single_entity_transactions_size(item):
     return item['crossing_margin_rate'] * math.sqrt(transaction_rate) * price_discount, transaction_rate
 
 def generate_html_report(score_sorted_item, limit, **run_info):
-    crossing_margin_cutoff_rate = 0.01
-    if 'crossing_margin_cutoff_rate' in run_info:
-        crossing_margin_cutoff_rate = run_info['crossing_margin_cutoff_rate']
-    crossing_margin_cutoff_value = 10
-    if 'crossing_margin_cutoff_value' in run_info:
-        crossing_margin_cutoff_value = run_info['crossing_margin_cutoff_value']
+    mid_margin_cutoff_rate = 0.01
+    if 'mid_margin_cutoff_rate' in run_info:
+        mid_margin_cutoff_rate = run_info['mid_margin_cutoff_rate']
+    mid_margin_cutoff_value = 10
+    if 'mid_margin_cutoff_value' in run_info:
+        mid_margin_cutoff_value = run_info['mid_margin_cutoff_value']
 
     text = ("<html><head></head><body>"
         "Hi,<br><p>Please see below for a list of candidate shoes.</p>")
@@ -604,11 +617,12 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                     "<th>Size</th>"
                     "<th>StockX</th>"
                     "<th>Du</th>"
+                    "<th>Du 30% Target Sell Price CNY / Du Listed Price CNY</th>"
                     "<th>FlightClub: Listed Price</th>"
                     "<th>FlightClub: Market Price</th>"
                     "<th>Action</th>"
-                    "<th>Crossing Margin</th>"
-                    "<th>Crossing Margin %</th>"
+                    "<th>Mid Margin</th>"
+                    "<th>Mid Margin %</th>"
                     "<th>Daily Volume</th>"
                     "<th>Score</th>"
                     "<th>Style ID</th>"
@@ -617,10 +631,11 @@ def generate_html_report(score_sorted_item, limit, **run_info):
     report_cnt = 0
     for key in score_sorted_item:
         shoe = key[1]
-        if shoe["crossing_margin_rate"] > crossing_margin_cutoff_rate and \
-           shoe["crossing_margin"] > crossing_margin_cutoff_value and \
+        if shoe["crossing_margin_rate"] > mid_margin_cutoff_rate and \
+           shoe["crossing_margin"] > mid_margin_cutoff_value and \
            (not limit or report_cnt < limit):
             text += ("<tr>"
+                        "<td>{}</td>"
                         "<td>{}</td>"
                         "<td>{}</td>"
                         "<td>{}</td>"
@@ -635,16 +650,22 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         "<td>{:.2f}</td>"
                         "<td>{}</td>"
                      "</tr>").format(
-                        shoe['name'], shoe['release_date'], shoe['shoe_size'],
+                        shoe['name'],
+                        shoe['release_date'],
+                        shoe['shoe_size'],
                         "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['sx_url'], float(shoe['sx_best_ask'])),
                         "N/A" if not "du_price_usd" in shoe else "<a href=\"{}\">{:.2f}</a> ({})".format(
                             shoe['du_url'], float(shoe['du_price_usd']), shoe['du_size_chinese']),
+                        "N/A" if not "du_markout_30p_cny" in shoe else "{:.2f} / {:.2f}".format(
+                            shoe['du_markout_30p_cny'], shoe['du_price_cny']),
                         "N/A" if not "fc_list_px" in shoe else "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['fc_url'], float(shoe['fc_list_px'])),
                         "N/A" if not 'fc_sell_url' in shoe else "<a href=\"{}\">{:.2f}</a>".format(
                             shoe['fc_sell_url'], shoe['fc_sell_px']),
-                        shoe["action"], shoe['crossing_margin'], shoe['crossing_margin_rate'],
+                        shoe["action"],
+                        shoe['mid_margin'],
+                        shoe['mid_margin_rate'],
                         "{:.2f}{}".format(shoe['volume'], ' (approx)' if 'volume_approximated' in shoe else ''),
                         shoe['score'], shoe['style_id'])
             report_cnt += 1
@@ -656,9 +677,12 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    fc_file = "../../data/flightclub.dummy.txt"
-    sx_file = "../../data/stockx/20190715-232450/promising/best_prices.txt"
-    du_file = "../../data/du/du.20190720-002330.txt"
+    
+    fc_file = "../../data/flightclub.data.20190728-063601/flightclub.txt"
+    # fc_file = "../../data/flightclub.dummy.txt"
+
+    sx_file = "../../data/stockx/20190727-060350/promising/best_prices.txt"
+    du_file = "../../data/du/du.20190728-110632.txt"
     du_crawl_time = datetime.datetime.strptime(os.path.basename(du_file).split('.')[1], "%Y%m%d-%H%M%S")
     sx_transactions_folder = "../../data/stockx/20190715-232450/"
 
@@ -699,8 +723,8 @@ if __name__ == "__main__":
             fc_file=fc_file, sx_file=sx_file, du_file=du_file,
             sx_transactions_folder=sx_transactions_folder,
             total_model_size_matches=total_matches,
-            crossing_margin_cutoff_rate=0.05,
-            crossing_margin_cutoff_value=20)
+            mid_margin_cutoff_rate=0.25,
+            mid_margin_cutoff_value=20)
 
         server = smtplib.SMTP('smtp.gmail.com:587')
         server.ehlo()
