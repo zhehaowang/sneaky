@@ -304,9 +304,14 @@ du_flat_fee_cny = 33
 def get_du_extra_cost_for_sell_px(sell_px):
     return sell_px * (du_commission_rate + du_tech_service_rate + du_transfer_rate) + sx_bid_commission + du_shipping_fee + get_spot_fx(du_flat_fee_cny, 'CNY', 'USD')
 
+# TODO: should x1.3 be applied to sx commission, shipping fee and du flat fee?
 def find_du_target_sellpx_cny(buy_cost_usd, target_percent):
-    buy_cost_cny = get_spot_fx(buy_cost_usd, 'USD', 'CNY')
-    return (buy_cost_cny * (1 + target_percent) + du_flat_fee_cny + get_spot_fx(du_shipping_fee, 'USD', 'CNY')) / (1 - du_commission_rate + du_tech_service_rate - du_transfer_rate)
+    buy_cost_cny = get_spot_fx(buy_cost_usd + sx_bid_commission, 'USD', 'CNY')
+    return ((buy_cost_cny + du_flat_fee_cny + get_spot_fx(du_shipping_fee, 'USD', 'CNY')) * (1 + target_percent)) / (1 - du_commission_rate - du_tech_service_rate - du_transfer_rate)
+
+def find_sx_max_bid_usd(du_px_cny, target_percent):
+    sell_px_usd = get_spot_fx(du_px_cny, 'CNY', 'USD')
+    return float(math.ceil(((1 - du_commission_rate - du_tech_service_rate - du_transfer_rate) * sell_px_usd - du_flat_fee_cny - du_shipping_fee - sx_bid_commission) / (1 + target_percent)))
 
 def get_fc_sell_val(sell_px):
     return sell_px - get_fc_extra_cost_for_sell_px(sell_px)
@@ -445,7 +450,8 @@ def find_margin(matches, du_crawl_time):
                         mid_margin = get_du_sell_val(sell_px) - float(match_item['sx_mid_px'])
                         mid_margin_rate = mid_margin / (float(match_item['sx_mid_px']) + sx_bid_commission)
 
-                        match_item['du_markout_30p_cny'] = find_du_target_sellpx_cny(float(match_item['sx_mid_px']) + sx_bid_commission, 0.3)
+                        match_item['du_markout_30p_cny'] = find_du_target_sellpx_cny(float(match_item['sx_mid_px']), 0.3)
+                        match_item['sx_du_bid_px_30p_usd'] = find_sx_max_bid_usd(float(match_item['du_price_cny']), 0.3)
                         match_item['action'] = 'sx->du'
 
                 match_item['crossing_margin'] = crossing_margin
@@ -615,8 +621,8 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                     "<th>Name</th>"
                     "<th>Release</th>"
                     "<th>Size</th>"
-                    "<th>StockX</th>"
-                    "<th>Du</th>"
+                    "<th>StockX mid USD / 30% profit bid USD</th>"
+                    "<th>Du USD</th>"
                     "<th>Du 30% Target Sell Price CNY / Du Listed Price CNY</th>"
                     "<th>FlightClub: Listed Price</th>"
                     "<th>FlightClub: Market Price</th>"
@@ -653,8 +659,9 @@ def generate_html_report(score_sorted_item, limit, **run_info):
                         shoe['name'],
                         shoe['release_date'],
                         shoe['shoe_size'],
-                        "<a href=\"{}\">{:.2f}</a>".format(
-                            shoe['sx_url'], float(shoe['sx_best_ask'])),
+                        "<a href=\"{}\">{:.2f} / {:.2f}</a>".format(
+                            shoe['sx_url'], (float(shoe['sx_best_ask']) + float(shoe['sx_best_bid'])) / 2,
+                            float(shoe['sx_du_bid_px_30p_usd'])),
                         "N/A" if not "du_price_usd" in shoe else "<a href=\"{}\">{:.2f}</a> ({})".format(
                             shoe['du_url'], float(shoe['du_price_usd']), shoe['du_size_chinese']),
                         "N/A" if not "du_markout_30p_cny" in shoe else "{:.2f} / {:.2f}".format(
@@ -678,11 +685,11 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
-    fc_file = "../../data/flightclub.data.20190728-063601/flightclub.txt"
-    # fc_file = "../../data/flightclub.dummy.txt"
+    # fc_file = "../../data/flightclub.data.20190728-063601/flightclub.txt"
+    fc_file = "../../data/flightclub.dummy.txt"
 
-    sx_file = "../../data/stockx/20190727-060350/promising/best_prices.txt"
-    du_file = "../../data/du/du.20190728-110632.txt"
+    sx_file = "../../data/stockx/20190809-224615/promising/best_prices.txt"
+    du_file = "../../data/du/du.20190810-041117.txt"
     du_crawl_time = datetime.datetime.strptime(os.path.basename(du_file).split('.')[1], "%Y%m%d-%H%M%S")
     sx_transactions_folder = "../../data/stockx/20190715-232450/"
 
