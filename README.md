@@ -1,42 +1,52 @@
-# Sneaky
+# Playbook
 
-Feed and strategy for secondary markets for sneakers.
+[Sheet](https://docs.google.com/spreadsheets/d/1vA9h_aSrRAWxI8W91UQTATWKh--NYRDDAt_vudpxbek/edit#gid=0)
 
-### Strategy
+### When we bid
 
-##### stockx
+* Fill out
+  * Style ID
+  * Item name
+  * Status
+  * US Size
+  * Chinese Size
+  * (Annotation?)
+  * Bid date
 
-* [stockxapi](https://pypi.org/project/stockx-py-sdk/)
-* Search term --> product ID
-* product ID --> current book, past sales, transaction history
-* Book builder (per `<shoe model, size>` of given product ID)
-* arbitrary throttling
+### When our bid is filled
 
-##### flightclub
+* Fill out
+  * Status
+  * In price
+  * Filled date
 
-* scrapy full site scrape
-* model, size --> sell price
-* sell page: style id to sell item id, sell price
+### When a pair arrives in the US
 
-##### ebay
+* Fill out
+  * Status
+  * Arrive date
 
-* scrapy search-term based scrape
-* html page (size, price) scrape
-* data deemed too low quality and high chance of subquality item to be of use
+### When a pair ships from US to China
 
-##### du
+* Fill out
+  * Status
+  * Ship date
 
-### strategies
+### When a pair arrives in China
 
-##### matching
+* List on du. Check
+  * Style-ID
+  * Chinese size
+  * du price vs target profit price
 
-* name subset based match
-* reverse search term query: one <-> one result item means a match
-* style ID based match
+* Fill out
+  * Listing date
 
-##### strategies
+### When a pair sells
 
-* market making on stockx
-  * widest spread items have very low profit rate and long turn-around time: widest spread is about commission rate of the platform
-  * large volatility, low volume, low liquidity
-* arbitrage between stockx and flightclub
+* Fill out
+  * Status
+  * Sell date
+  * Sell price
+  * profit margin
+
