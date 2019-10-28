@@ -5,32 +5,25 @@
 ### When we bid
 
 * Fill out
-  * Style ID
   * Item name
+  * Style ID
   * Status
   * US Size
   * Chinese Size
-  * (Annotation?)
   * Bid date
-
-### When our bid is filled
-
-* Fill out
-  * Status
-  * In price
-  * Filled date
+  * Bid price
+  * Target Sell price
+  * Target profit ratio
+  * Destination-listed-price
+  * Max Bid price (generated)
 
 ### When a pair arrives in the US
 
 * Fill out
   * Status
-  * Arrive date
-
-### When a pair ships from US to China
-
-* Fill out
-  * Status
-  * Ship date
+  * buy-total-cost-usd
+  * Filled date
+  * Arrive date in US
 
 ### When a pair arrives in China
 
@@ -40,7 +33,8 @@
   * du price vs target profit price
 
 * Fill out
-  * Listing date
+  * ship-date-from-us
+  * list-date
 
 ### When a pair sells
 
