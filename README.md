@@ -44,3 +44,9 @@
   * Sell price
   * profit margin
 
+# Stand-ups
+
+Sunday night round-up
+* check inventory
+* advance stages in the sheet
+* report progress
