@@ -5,11 +5,13 @@ import json
 import requests
 
 from du_url_builder import DuRequestBuilder
+from du_response_parser import DuParser, SaleRecord
 
 # test connectivity
-class TestConnectivity(unittest.TestCase):
+class TestConnectivityAndParse(unittest.TestCase):
     def setUp(self):
         self.request_builder = DuRequestBuilder()
+        self.parser = DuParser()
         return
 
     def test_recent_sales(self):
@@ -22,6 +24,11 @@ class TestConnectivity(unittest.TestCase):
         except json.decoder.JSONDecodeError as e:
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
+
+        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text)
+        print("retrieved last_id {} and {} records.".format(last_id, len(sales)))
+        if len(sales) > 0:
+            print("example record {}".format(sales[0]))
 
     def test_search_by_keywords(self):
         search_by_keywords_url = self.request_builder.get_search_by_keywords_url(0, 1, 0)
