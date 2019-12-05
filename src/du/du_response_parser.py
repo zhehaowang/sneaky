@@ -85,3 +85,6 @@ class DuParser():
                     self.sanitize_price(s['price']),
                     self.sanitize_time(s['formatTime'])))
         return data["lastId"], records
+
+    def parse_search_results(self):
+        return

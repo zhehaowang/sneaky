@@ -31,7 +31,7 @@ class TestConnectivityAndParse(unittest.TestCase):
             print("example record {}".format(sales[0]))
 
     def test_search_by_keywords(self):
-        search_by_keywords_url = self.request_builder.get_search_by_keywords_url(0, 1, 0)
+        search_by_keywords_url = self.request_builder.get_search_by_keywords_url("aj", 0, 1, 0)
         search_by_keywords_response = requests.get(url=search_by_keywords_url, headers=DuRequestBuilder.du_headers)
         try:
             status = json.loads(search_by_keywords_response.text)["status"]

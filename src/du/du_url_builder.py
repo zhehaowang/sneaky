@@ -29,11 +29,11 @@ class DuRequestBuilder():
             'productId={}&lastId={}&limit={}&sourceApp=app&sign={}'.format(product_id, last_id, limit, sign)
       return url
 
-   def get_search_by_keywords_url(self, page, sort_mode, sort_type, limit=20):
+   def get_search_by_keywords_url(self, title, page, sort_mode, sort_type, limit=20):
       # search by keyword
-      sign = self.ctx.call('getSign','limit{}page{}sortMode{}sortType{}titleajunionId{}'.format(limit, page, sort_mode, sort_type, self.salt))
-      url = self.base_url + '/product/fire/search/list?title=aj&page={}&sortType={}&sortMode={}&' \
-            'limit={}&unionId=&sign={}'.format(page, sort_type, sort_mode, limit, sign)
+      sign = self.ctx.call('getSign','limit{}page{}sortMode{}sortType{}title{}unionId{}'.format(limit, page, sort_mode, sort_type, title, self.salt))
+      url = self.base_url + '/product/fire/search/list?title={}&page={}&sortType={}&sortMode={}&' \
+            'limit={}&unionId=&sign={}'.format(title, page, sort_type, sort_mode, limit, sign)
       return url
 
    def get_brand_list_url(self, last_id, tab_id, limit=20):
