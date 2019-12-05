@@ -682,16 +682,24 @@ def generate_html_report(score_sorted_item, limit, **run_info):
 
     return text if report_cnt > 0 else "But didn't find anything :("
 
+def find_profit(buy_cost_usd, out_price_cny):
+    buy_cost_cny = get_spot_fx(buy_cost_usd + sx_bid_commission, 'USD', 'CNY')
+    return get_spot_fx(
+        (out_price_cny * (1 - du_commission_rate - du_tech_service_rate - du_transfer_rate)) - 
+        (buy_cost_cny + du_flat_fee_cny + get_spot_fx(du_shipping_fee, 'USD', 'CNY')), 
+        'CNY', 'USD')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     
     # fc_file = "../../data/flightclub.data.20190728-063601/flightclub.txt"
     fc_file = "../../data/flightclub.dummy.txt"
 
-    sx_file = "../../data/stockx/20190809-224615/promising/best_prices.txt"
-    du_file = "../../data/du/du.20190810-041117.txt"
+    sx_file = "../../data/stockx/20191019-193535/promising/best_prices.txt"
+    du_file = "../../data/du/du.20191019-222540.txt"
     du_crawl_time = datetime.datetime.strptime(os.path.basename(du_file).split('.')[1], "%Y%m%d-%H%M%S")
-    sx_transactions_folder = "../../data/stockx/20190715-232450/"
+    sx_transactions_folder = "../../data/stockx/20191019-193535/"
 
     parser.add_argument(
         "--score_mode",
