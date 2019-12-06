@@ -3,6 +3,7 @@
 import re
 import json
 import datetime
+import hashlib
 
 def timestr_to_epoch(timestr, timenow=None):
     """
@@ -47,10 +48,11 @@ def timestr_to_epoch(timestr, timenow=None):
     raise RuntimeError('failed to parse timestr {}'.format(timestr))
 
 class SaleRecord():
-    def __init__(self, size, price, time):
+    def __init__(self, size, price, time, id=None):
         self.size = size
         self.price = price
         self.time = time
+        self.id = id
 
     def __str__(self):
         return str(self.size) + " " + str(self.price) + " " + self.time
@@ -104,6 +106,14 @@ class DuParser():
     def sanitize_price(price_str):
         return float(price_str)
 
+    @staticmethod
+    def get_sale_id(sales_list_obj):
+        m = hashlib.md5()
+        m.update(str(sales_list_obj['price']).encode('utf-8'))
+        m.update(str(sales_list_obj['sizeDesc']).encode('utf-8'))
+        m.update(str(sales_list_obj['userName']).encode('utf-8'))
+        return m.hexdigest()
+
     def parse_recent_sales(self, in_text):
         o = json.loads(in_text)
         if o["status"] != 200:
@@ -116,7 +126,8 @@ class DuParser():
                 SaleRecord(
                     self.sanitize_size(s['sizeDesc']),
                     self.sanitize_price(s['price']),
-                    self.sanitize_time(s['formatTime'])))
+                    self.sanitize_time(s['formatTime']),
+                    id=self.get_sale_id(s)))
         return data["lastId"], result
 
     def parse_search_results(self, in_text):
