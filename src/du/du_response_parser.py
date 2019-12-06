@@ -57,16 +57,16 @@ class SaleRecord():
 
 class DuItem():
     def __init__(self, product_id, title, sold_num):
-        self.product_id = product_id
-        self.title = title
-        self.sold_num = sold_num
+        self.product_id = str(product_id)
+        self.title = str(title)
+        self.sold_num = int(sold_num)
         self.style_id = None
         self.size_prices = {}
 
     def populate_details(self, style_id, size_prices, release_date):
-        self.style_id = style_id
+        self.style_id = str(style_id)
         self.size_prices = size_prices
-        self.release_date = release_date
+        self.release_date = str(release_date)
         return
 
     def get_static_info(self):
