@@ -55,6 +55,27 @@ class SaleRecord():
     def __str__(self):
         return str(self.size) + " " + str(self.price) + " " + self.time
 
+class DuItem():
+    def __init__(self, product_id, title, sold_num):
+        self.product_id = product_id
+        self.title = title
+        self.sold_num = sold_num
+        self.style_id = None
+        self.size_prices = {}
+
+    def populate_details(self, style_id, size_prices):
+        self.style_id = style_id
+        self.size_prices = size_prices
+        return
+
+    def __str__(self):
+        if self.style_id:
+            return "{} {} {} {} {}".format(
+                self.style_id, self.product_id, self.title, self.sold_num, self.size_prices)
+        else:
+            return "{} {} {}".format(
+                self.product_id, self.title, self.sold_num)
+
 class DuParser():
     def __init__(self):
         return
@@ -77,14 +98,37 @@ class DuParser():
     def parse_recent_sales(self, in_text):
         data = json.loads(in_text)["data"]
         sales_list = data["list"]
-        records = []
+        result = []
         for s in sales_list:
-            records.append(
+            result.append(
                 SaleRecord(
                     self.sanitize_size(s['sizeDesc']),
                     self.sanitize_price(s['price']),
                     self.sanitize_time(s['formatTime'])))
-        return data["lastId"], records
+        return data["lastId"], result
 
-    def parse_search_results(self):
-        return
+    def parse_search_results(self, in_text):
+        data = json.loads(in_text)["data"]
+        product_list = data["productList"]
+        result = []
+        for p in product_list:
+            result.append(DuItem(p["productId"], p["title"], p["soldNum"]))
+        return result
+
+    def parse_size_list(self, size_list):
+        result = {}
+        for s in size_list:
+            bid = s["buyerBiddingItem"]
+            bid_price = bid["price"]
+            size = s["formatSize"]
+            result[size] = {
+                "bid_price": bid_price
+            }
+        return result
+
+    def parse_product_detail_response(self, in_text):
+        data = json.loads(in_text)["data"]
+        detail = data["detail"]
+        style_id = detail["articleNumber"]
+        size_list = self.parse_size_list(data["sizeList"])
+        return style_id, size_list

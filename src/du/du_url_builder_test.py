@@ -41,6 +41,10 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
+        search_results = self.parser.parse_search_results(search_by_keywords_response.text)
+        self.assertTrue(len(search_results) > 0)
+        print("example search result item {}".format(search_results[0]))
+
     def test_brandlist(self):
         brand_list_url = self.request_builder.get_brand_list_url(1, 4)
         brand_list_response = requests.get(url=brand_list_url, headers=DuRequestBuilder.du_headers)
@@ -62,6 +66,11 @@ class TestConnectivityAndParse(unittest.TestCase):
         except json.decoder.JSONDecodeError as e:
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
+
+        style_id, size_list = self.parser.parse_product_detail_response(product_detail_response.text)
+        self.assertTrue(len(style_id) > 0)
+        self.assertTrue(len(size_list) > 0)
+        print("example product detail {} {}".format(style_id, next(iter(size_list.values()))))
 
 if __name__ == '__main__':
     unittest.main()
