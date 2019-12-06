@@ -63,10 +63,19 @@ class DuItem():
         self.style_id = None
         self.size_prices = {}
 
-    def populate_details(self, style_id, size_prices):
+    def populate_details(self, style_id, size_prices, release_date):
         self.style_id = style_id
         self.size_prices = size_prices
+        self.release_date = release_date
         return
+
+    def get_static_info(self):
+        return {
+            "style_id": self.style_id,
+            "product_id": self.product_id,
+            "title": self.title,
+            "release_date": self.release_date
+        }
 
     def __str__(self):
         if self.style_id:
@@ -96,7 +105,10 @@ class DuParser():
         return float(price_str)
 
     def parse_recent_sales(self, in_text):
-        data = json.loads(in_text)["data"]
+        o = json.loads(in_text)
+        if o["status"] != 200:
+            raise RuntimeError("parse_recent_sales aborted response status {}".format(o["status"]))
+        data = o["data"]
         sales_list = data["list"]
         result = []
         for s in sales_list:
@@ -108,7 +120,10 @@ class DuParser():
         return data["lastId"], result
 
     def parse_search_results(self, in_text):
-        data = json.loads(in_text)["data"]
+        o = json.loads(in_text)
+        if o["status"] != 200:
+            raise RuntimeError("parse_search_results aborted response status {}".format(o["status"]))
+        data = o["data"]
         product_list = data["productList"]
         result = []
         for p in product_list:
@@ -127,8 +142,12 @@ class DuParser():
         return result
 
     def parse_product_detail_response(self, in_text):
-        data = json.loads(in_text)["data"]
+        o = json.loads(in_text)
+        if o["status"] != 200:
+            raise RuntimeError("parse_product_detail_response aborted response status {}".format(o["status"]))
+        data = o["data"]
         detail = data["detail"]
         style_id = detail["articleNumber"]
+        release_date = detail["sellDate"]
         size_list = self.parse_size_list(data["sizeList"])
-        return style_id, size_list
+        return style_id, size_list, release_date

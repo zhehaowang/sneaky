@@ -5,7 +5,7 @@ import json
 import requests
 
 from du_url_builder import DuRequestBuilder
-from du_response_parser import DuParser, SaleRecord
+from du_response_parser import DuParser
 
 # test connectivity
 class TestConnectivityAndParse(unittest.TestCase):
