@@ -96,10 +96,10 @@ class DuFeed():
         return self.get_details_from_product_id(product_id)
 
     # TODO: paging
-    def get_historical_transactions(self, product_id, page=0):
+    def get_historical_transactions(self, product_id, in_code, page=0):
         recentsales_list_url = self.builder.get_recentsales_list_url(page, product_id)
         recentsales_list_response = requests.get(url=recentsales_list_url, headers=DuRequestBuilder.du_headers)
-        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text)
+        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text, in_code)
         return sales
 
 class Serializer():
@@ -116,9 +116,9 @@ class Serializer():
         static_mapping_file = "du.mapping.{}.csv".format(date_time)
         with open(static_mapping_file, "w") as outfile:
             wr = csv.writer(outfile)
-            wr.writerow(["style_id", "du_product_id", "du_title", "release_date"])
+            wr.writerow(["style_id", "du_product_id", "du_title", "release_date", "gender"])
             for row in static_items:
-                wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"]])
+                wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"], row["gender"]])
         print("dumped static mapping to {}".format(static_mapping_file))
 
     def load_static_info_from_csv(self, filename):
@@ -135,10 +135,12 @@ class Serializer():
                     product_id = row[1]
                     title = row[2]
                     release_date = row[3]
+                    gender = row[4]
 
                     item = DuItem(product_id, title, 0)
                     item.release_date = release_date
                     item.style_id = style_id
+                    item.gender = row[4]
                     result[product_id] = item
         return result
 
@@ -191,28 +193,26 @@ if __name__ == "__main__":
         time_series_serializer = TimeSeriesSerializer()
 
         static_info = serializer.load_static_info_from_csv(args.start_from)
-        try:
-            for product_id in static_info:
-                if last_updated_serializer.should_update(product_id, "du"):
+        for product_id in static_info:
+            if last_updated_serializer.should_update(product_id, "du"):
+                try:
                     style_id = static_info[product_id].style_id
+                    gender = static_info[product_id].gender
                     size_prices = feed.get_prices_from_product_id(product_id)
-                    transactions = feed.get_historical_transactions(product_id)
+                    transactions = feed.get_historical_transactions(product_id, gender)
                     size_transactions = time_series_serializer.get_size_transactions(transactions)
                     update_time = last_updated_serializer.update_last_updated(style_id, "du")
                     time_series_serializer.update(
                         "du", update_time, style_id, size_prices, size_transactions)
-        except KeyError as e:
-            print(e)
-            save_last_updated.save_last_updated()
-        except RuntimeError as e:
-            print(e)
-            save_last_updated.save_last_updated()
-        except json.decoder.JSONDecodeError as e:
-            print(e)
-            save_last_updated.save_last_updated()
-        except:
-            print("caught exception, halting and saving last updated")
-            save_last_updated.save_last_updated()
+                except KeyError as e:
+                    print("get_tick failed {}".format(e))
+                except RuntimeError as e:
+                    print("get_tick failed {}".format(e))
+                except json.decoder.JSONDecodeError as e:
+                    print("get_tick failed {}".format(e))
+                last_updated_serializer.save_last_updated()
+            else:
+                print("should skip {}".format(product_id))
     else:
         raise RuntimeError("Unsupported mode {}".format(args.mode))
 

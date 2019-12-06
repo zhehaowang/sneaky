@@ -25,7 +25,7 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
-        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text)
+        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text, "eu-adidas-men")
         print("retrieved last_id {} and {} records.".format(last_id, len(sales)))
         if len(sales) > 0:
             print("example record {}".format(sales[0]))
@@ -67,7 +67,7 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
-        style_id, size_list = self.parser.parse_product_detail_response(product_detail_response.text)
+        style_id, size_list, release_date = self.parser.parse_product_detail_response(product_detail_response.text)
         self.assertTrue(len(style_id) > 0)
         self.assertTrue(len(size_list) > 0)
         print("example product detail {} {}".format(style_id, next(iter(size_list.values()))))

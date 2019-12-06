@@ -22,8 +22,9 @@ class LastUpdatedSerializer():
                 self.last_updated[style_id] = {}
 
                 for i in range(len(self.columns)):
-                    self.last_updated[style_id][self.columns[i]] = datetime.datetime.strptime(
-                        row[1 + i], "%Y%m%d-%H%M%S")
+                    if i + 1 < len(row):
+                        self.last_updated[style_id][self.columns[i]] = datetime.datetime.strptime(
+                            row[i + 1], "%Y%m%d-%H%M%S")
     
     def update_last_updated(self, style_id, venue):
         if style_id not in self.last_updated:
@@ -42,7 +43,7 @@ class LastUpdatedSerializer():
                 return (now - last_update).total_seconds() > self.min_update_time
 
     def save_last_updated(self):
-        with open(self.dst_file_path) as outfile:
+        with open(self.dst_file_path, "w") as outfile:
             wr = csv.writer(outfile)
             for style_id in self.last_updated:
                 out_list = [style_id]

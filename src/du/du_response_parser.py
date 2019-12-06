@@ -5,6 +5,8 @@ import json
 import datetime
 import hashlib
 
+from sizer import get_shoe_size, has_women_only_adidas_size
+
 def timestr_to_epoch(timestr, timenow=None):
     """
     helper function to convert last_transaction time format to epoch
@@ -64,11 +66,23 @@ class DuItem():
         self.sold_num = int(sold_num)
         self.style_id = None
         self.size_prices = {}
+        self.gender = None
+    
+    @staticmethod
+    def infer_gender(title):
+        if "nike" in title.lower():
+            # TODO: verify women handling
+            return "eu-nike-men"
+        elif "adidas" in title.lower() or "jordan" in title.lower():
+            return "eu-adidas-men"
+        else:
+            raise RuntimeError("failed to infer gender from {}".format(title))
 
     def populate_details(self, style_id, size_prices, release_date):
         self.style_id = str(style_id)
         self.size_prices = size_prices
         self.release_date = str(release_date)
+        self.gender = self.infer_gender(self.title)
         return
 
     def get_static_info(self):
@@ -76,7 +90,8 @@ class DuItem():
             "style_id": self.style_id,
             "product_id": self.product_id,
             "title": self.title,
-            "release_date": self.release_date
+            "release_date": self.release_date,
+            "gender": self.gender
         }
 
     def __str__(self):
@@ -92,11 +107,12 @@ class DuParser():
         return
     
     @staticmethod
-    def sanitize_size(size_str):
+    def sanitize_size(size_str, in_code, out_code='us'):
         match = re.match("^([0-9.]+)[^0-9.]*", size_str)
         if not match:
             raise RuntimeError("failed to parse size {}".format(size_str))
-        return match.group(1)
+        # TODO: is float key a good idea?
+        return get_shoe_size(float(match.group(1)), in_code, out_code)
 
     @staticmethod
     def sanitize_time(time_str):
@@ -114,7 +130,7 @@ class DuParser():
         m.update(str(sales_list_obj['userName']).encode('utf-8'))
         return m.hexdigest()
 
-    def parse_recent_sales(self, in_text):
+    def parse_recent_sales(self, in_text, in_code):
         o = json.loads(in_text)
         if o["status"] != 200:
             raise RuntimeError("parse_recent_sales aborted response status {}".format(o["status"]))
@@ -124,7 +140,7 @@ class DuParser():
         for s in sales_list:
             result.append(
                 SaleRecord(
-                    self.sanitize_size(s['sizeDesc']),
+                    self.sanitize_size(s['sizeDesc'], in_code),
                     self.sanitize_price(s['price']),
                     self.sanitize_time(s['formatTime']),
                     id=self.get_sale_id(s)))
@@ -141,12 +157,12 @@ class DuParser():
             result.append(DuItem(p["productId"], p["title"], p["soldNum"]))
         return result
 
-    def parse_size_list(self, size_list):
+    def parse_size_list(self, size_list, in_code):
         result = {}
         for s in size_list:
             bid = s["buyerBiddingItem"]
-            bid_price = bid["price"]
-            size = s["formatSize"]
+            bid_price = self.sanitize_price(bid["price"])
+            size = self.sanitize_size(s["formatSize"], in_code)
             result[size] = {
                 "bid_price": bid_price
             }
@@ -160,5 +176,6 @@ class DuParser():
         detail = data["detail"]
         style_id = detail["articleNumber"]
         release_date = detail["sellDate"]
-        size_list = self.parse_size_list(data["sizeList"])
+        gender = DuItem.infer_gender(detail["title"])
+        size_list = self.parse_size_list(data["sizeList"], gender)
         return style_id, size_list, release_date
