@@ -61,7 +61,7 @@ class SaleRecord():
 
 class DuItem():
     def __init__(self, product_id, title, sold_num):
-        self.product_id = str(product_id)
+        self.product_id = DuParser.sanitize_style_id(product_id)
         self.title = str(title)
         self.sold_num = int(sold_num)
         self.style_id = None
@@ -121,6 +121,10 @@ class DuParser():
     @staticmethod
     def sanitize_price(price_str):
         return float(price_str)
+
+    @staticmethod
+    def sanitize_style_id(style_id):
+        return str(style_id).strip()
 
     @staticmethod
     def get_sale_id(sales_list_obj):

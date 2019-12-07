@@ -153,9 +153,9 @@ if __name__ == "__main__":
 
         static_info = serializer.load_static_info_from_csv(args.start_from)
         for product_id in static_info:
-            if last_updated_serializer.should_update(product_id, "du"):
+            style_id = static_info[product_id].style_id
+            if last_updated_serializer.should_update(style_id, "du"):
                 try:
-                    style_id = static_info[product_id].style_id
                     gender = static_info[product_id].gender
                     size_prices = feed.get_prices_from_product_id(product_id)
                     transactions = feed.get_historical_transactions(product_id, gender)

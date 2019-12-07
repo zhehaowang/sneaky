@@ -10,7 +10,7 @@ class LastUpdatedSerializer():
         self.dst_file_path = last_updated_file
         self.last_updated = {}
         self.columns = ["du", "stockx", "flightclub"]
-        self.min_update_time = min_update_time
+        self.min_update_time = float(min_update_time)
         if os.path.isfile(last_updated_file):
             self.load_last_updated()
     
@@ -36,11 +36,13 @@ class LastUpdatedSerializer():
         if not self.min_update_time:
             return True
         else:
-            now = datetime.datetime.now()
-            last_update = time.time()
             if style_id in self.last_updated and venue in self.last_updated[style_id]:
+                now = datetime.datetime.now()
+                last_update = time.time()
                 last_update = self.last_updated[style_id][venue]
                 return (now - last_update).total_seconds() > self.min_update_time
+            else:
+                return True
 
     def save_last_updated(self):
         with open(self.dst_file_path, "w") as outfile:
