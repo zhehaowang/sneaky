@@ -3,12 +3,15 @@
 import csv
 import argparse
 
+def sanitize_style_id(style_id):
+    return style_id.upper()
+
 def parse_file(filename, style_id_key):
     result = {}
     with open(filename, "r") as infile:
         rr = csv.DictReader(infile, delimiter=',')
         for row in rr:
-            result[row[style_id_key]] = row
+            result[sanitize_style_id(row[style_id_key])] = row
     return result
 
 def infer_source(name):
@@ -46,10 +49,14 @@ def merge_csvs(csvs, outfile_name, populate_no_match):
     for style_id in keys:
         for r in results:
             if style_id not in merged:
-                merged[style_id] = {}
+                merged[style_id] = {
+                    'sanitized_style_id': style_id
+                }
             for k in r[style_id]:
                 merged[style_id][k] = r[style_id][k]
                 fieldnames[k] = True
+    
+    fieldnames['sanitized_style_id'] = True
     
     with open(outfile_name, "w") as outfile:
         wr = csv.DictWriter(outfile, delimiter=',', fieldnames=fieldnames.keys())

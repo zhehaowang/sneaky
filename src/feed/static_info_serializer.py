@@ -23,7 +23,7 @@ class StaticInfoSerializer():
             wr.writerow(["style_id", "du_product_id", "du_title", "release_date", "gender"])
             for row in static_items:
                 wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"], row["gender"]])
-        print("dumped static mapping to {}".format(static_mapping_file))
+        print("dumped {} entries to {}".format(len(static_items), static_mapping_file))
 
     def load_static_info_from_csv(self, filename):
         result = {}
