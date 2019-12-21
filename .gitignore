@@ -104,7 +104,7 @@ venv.bak/
 .mypy_cache/
 
 # credentials
-credentials.json
+credentials
 # scraped data
 data/*
 
