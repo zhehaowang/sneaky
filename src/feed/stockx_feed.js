@@ -137,7 +137,7 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
                     {id: 'retail', title: 'stockx_retail_price'},
                     {id: 'uuid', title: 'stockx_uuid'},
                     {id: 'pid', title: 'stockx_pid'},
-                    {id: 'styleId', title: 'stockx_style_id'},
+                    {id: 'styleId', title: 'style_id'},
                     {id: 'releaseDate', title: 'stockx_release_date'}
                 ]
             });
