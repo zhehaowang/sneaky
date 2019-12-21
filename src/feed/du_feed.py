@@ -114,7 +114,7 @@ if __name__ == "__main__":
     """)
     parser.add_argument(
         "--mode",
-        help=("[query|update]"))
+        help=("[query|update] query builds the static mapping file, update takes a mapping and updates entries"))
     parser.add_argument(
         "--kw",
         help="in query mode, the query keyword")
