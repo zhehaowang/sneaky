@@ -148,7 +148,7 @@ if __name__ == "__main__":
             result_items = {}
 
         for keyword in keywords:
-            result = feed.search_pages(args.kw, pages=int(args.pages), result_items=items)
+            result = feed.search_pages(keyword, pages=int(args.pages), result_items=result_items)
         serializer.dump_static_info_to_csv(result)
     elif args.mode == "update":
         if not args.start_from:
