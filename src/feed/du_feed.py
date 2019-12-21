@@ -104,7 +104,14 @@ class DuFeed():
         return sales
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("""
+        entry point for du feed.
+
+        example usage:
+          ./du_feed.py --mode update --start_from du.mapping.20191206-211125.csv --min_interval_seconds 3600
+          ./du_feed.py --mode query --kw aj --pages 2 --start_from du.mapping.20191206-145908.csv
+          ./du_feed.py --mode query --kw aj --pages 30
+    """)
     parser.add_argument(
         "--mode",
         help=("[query|update]"))

@@ -2,7 +2,6 @@ import datetime
 import csv
 
 from du_response_parser import DuItem
-from stockxsdk import StockxProduct
 
 class StaticInfoSerializer():
     def __init__(self):
@@ -56,22 +55,3 @@ class StaticInfoSerializer():
                     result[product_id] = item
         return result
 
-    def load_stockx_static_info_from_csv(self, filename):
-        result = {}
-        with open(filename, "r") as infile:
-            rr = csv.reader(infile)
-            count = 0
-            for row in rr:
-                count += 1
-                if count == 1:
-                    continue
-                else:
-                    style_id = row[0]
-                    product_id = row[1]
-                    title = row[2]
-                    price = row[3]
-                    brand = row[4]
-
-                    item = StockxProduct.from_csv_row(style_id, product_id, title, price, brand)
-                    result[product_id] = item
-        return result
