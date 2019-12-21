@@ -19,7 +19,7 @@ function setupArgs() {
         required: true
     });
     parser.addArgument(['-k', '--kw'], {
-        help: 'in query mode, the query keyword'
+        help: 'in query mode, a query keyword file, or the query keyword separated by comma'
     });
     parser.addArgument(['-s', '--start_from'], {
         help: 'in query mode, continue from entries not already populated in given\n' +
@@ -39,8 +39,8 @@ function setupArgs() {
 }
 
 async function logIn(credentialsFile) {
-    var content = fs.readFileSync(credentialsFile);
-    var cred = JSON.parse(content);
+    let content = fs.readFileSync(credentialsFile);
+    let cred = JSON.parse(content);
 
     console.log('Logging in...');
 
@@ -57,6 +57,38 @@ async function logIn(credentialsFile) {
     console.log('Successfully logged in as ' + cred['stockx'][0]['username']);
 }
 
+async function queryByKeyword(keyword, pages, seenStyleIds) {
+    if (keyword === "") {
+        return [];
+    }
+    const resultsPerPage = 20;
+    const productList = await stockX.searchProducts(keyword, {
+        limit: pages * resultsPerPage
+    });
+
+    if (seenStyleIds === undefined) {
+        seenStyleIds = {};
+    }
+    let productArray = productList.filter(product => !(product.styleId in seenStyleIds));
+    productArray = productArray.map(product => {
+        seenStyleIds[product.styleId] = true;
+        return {
+            gender: product.gender,
+            urlKey: product.urlKey,
+            colorWay: product.colorWay,
+            name: product.name,
+            title: product.title,
+            retail: product.retail,
+            uuid: product.uuid,
+            pid: product.pid,
+            styleId: product.styleId,
+            releaseDate: product.releaseDate
+        }});
+    
+    console.log('query ' + keyword + ' returned ' + productList.length + ' items');
+    return productArray;
+}
+
 (async () => {
     try {
         var args = setupArgs();
@@ -68,32 +100,31 @@ async function logIn(credentialsFile) {
             if (!args.pages) {
                 throw new Error("args.pages is mandatory in query mode");
             }
-            await logIn('../../credentials/credentials.json');
-
-            const resultsPerPage = 20;
-            const productList = await stockX.searchProducts(args.kw, {
-                limit: parseInt(args.pages) * resultsPerPage
-            });
-
-            let resultList = [];
             if (args.start_from) {
                 throw new Error("args.start_from should not be provided in query mode: each query is a full refresh")
             }
+            await logIn('../../credentials/credentials.json');
 
-            const productArray = productList.map(product => {
-                return {
-                    gender: product.gender,
-                    urlKey: product.urlKey,
-                    colorWay: product.colorWay,
-                    name: product.name,
-                    title: product.title,
-                    retail: product.retail,
-                    uuid: product.uuid,
-                    pid: product.pid,
-                    styleId: product.styleId
-                }});
+            let keywordsList = [];
+            if (fs.existsSync(args.kw)) {
+                // reading args.kw arg from file
+                let content = fs.readFileSync(args.kw, "utf8");
+                keywordsList = content.split('\n');
+            } else {
+                // parsing args.kw arg from cmdline
+                keywordsList = args.kw.split(',');
+            }
+            
+            let productArray = [];
+            let seenStyleIds = {};
+            for (let i in keywordsList) {
+                let products = await queryByKeyword(keywordsList[i], parseInt(args.pages), seenStyleIds);
+                productArray = productArray.concat(products);
+            }
+            
+            console.log("found " + productArray.length + " unique items from query " + keywordsList.join());
 
-            let currentTime = new Date(new Date().getTime()).toISOString();
+            let currentTime = new Date().toISOString();
             let csvFilePath = "stockx.mapping." + currentTime + ".csv"
             const csvWriter = createCsvWriter({
                 path: csvFilePath,
@@ -107,6 +138,7 @@ async function logIn(credentialsFile) {
                     {id: 'uuid', title: 'stockx_uuid'},
                     {id: 'pid', title: 'stockx_pid'},
                     {id: 'styleId', title: 'stockx_style_id'},
+                    {id: 'releaseDate', title: 'stockx_release_date'}
                 ]
             });
              
