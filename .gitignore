@@ -108,4 +108,9 @@ credentials.json
 # scraped data
 data/*
 
+# 3ps
+stockx-api
+
 .DS_Store
+.vscode
+logs
