@@ -114,3 +114,9 @@ stockx-api
 .DS_Store
 .vscode
 logs
+src/data/*
+
+# unused code
+src/exit_finder/*
+src/ebay/*
+
