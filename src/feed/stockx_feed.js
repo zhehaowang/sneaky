@@ -7,6 +7,7 @@ const fs = require('fs');
 
 const LastUpdatedSerializer = require('./last_updated.js');
 const StaticInfoSerializer = require('./static_info_serializer.js');
+const TimeSeriesSerializer = require('./time_series_serializer.js');
 
 function setupArgs() {
     var ArgumentParser = require('argparse').ArgumentParser;
@@ -91,6 +92,30 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
     return productArray;
 }
 
+function parseProduct(product) {
+    let variants = product["variants"];
+    let sizePrices = {};
+
+    for (v in variants) {
+        let variant = variants[v];
+        let size = variant["size"];
+        let mktData = variant["market"];
+
+        sizePrices[size] = {
+            bestAsk: mktData["lowestAsk"],
+            bestBid: mktData["highestBid"],
+            annualHigh: mktData["annualHigh"],
+            annualLow: mktData["annualLow"],
+            volatility: mktData["volatility"],
+            lastSale72Hours: mktData["salesLast72Hours"],
+            numberAsks: mktData["numberOfAsks"],
+            numberBids: mktData["numberOfBids"]
+        }
+    }
+
+    return sizePrices;
+}
+
 (async () => {
     try {
         var args = setupArgs();
@@ -135,11 +160,13 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
             if (!args.start_from) {
                 throw new Error("args.start_from is mandatory in update mode");
             }
-            
+
             await logIn('../../credentials/credentials.json');
 
             let staticInfoSerializer = new StaticInfoSerializer();
-            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, (staticInfo) => {
+            let timeSeriesSerializer = new TimeSeriesSerializer();
+
+            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, async (staticInfo) => {
                 let lastUpdatedFile = "last_updated_stockx.log";
                 if (args.last_updated) {
                     lastUpdatedFile = args.last_updated;
@@ -149,47 +176,28 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
                 lastUpdated.loads();
                 
                 const urlEndPoint = "https://stockx.com/";
+
+                let count = 0;
                 for (let key in staticInfo) {
                     console.log(urlEndPoint + staticInfo[key].urlKey);
-                    stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
-                        .then(product => {
-                            console.log(product)
-                        })
+                    await stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
+                        .then(((styleId) => {
+                            return p => {
+                                let sizePrices = parseProduct(p);
+                                count += 1;
+                                timeSeriesSerializer.update(new Date(), styleId, sizePrices);
+                                console.log("finished updating " + styleId);
+                            };
+                        })(key))
                         .catch(err => {
                             console.log(`Error scraping product details: ${err.message}`);
                         });
-                    break;
                 }
+                console.log("finished updating " + count + " items");
             });
         } else {
             throw new Error("unrecognized mode " + args.mode);
         }
-
-        //Returns an array of products
-
-        // console.log(productList);
-
-        //Fetch variants and product details of the first product
-        // const product = await stockX.fetchProductDetails(productList[0]);
-
-        // console.log(product);
-
-        // console.log('Placing an ask for ' + product.name);
-
-        // //Places an ask on that product
-        // const ask = await stockX.placeAsk(product, {
-        //     amount: 5000000000, 
-        //     size: '9.5'
-        // });
-
-        // console.log('Successfully placed an ask for $5000 for ' + product.name);
-
-        // //Updates the previous ask
-        // await stockX.updateAsk(ask, {
-        //     amount: 600000
-        // });
-
-        // console.log('Updated previous ask!');
     }
     catch (e) {
         console.log('Error: ' + e.message);
