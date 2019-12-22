@@ -166,34 +166,46 @@ function parseProduct(product) {
             let staticInfoSerializer = new StaticInfoSerializer();
             let timeSeriesSerializer = new TimeSeriesSerializer();
 
-            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, async (staticInfo) => {
+            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, (staticInfo) => {
                 let lastUpdatedFile = "last_updated_stockx.log";
                 if (args.last_updated) {
                     lastUpdatedFile = args.last_updated;
                 }
                 
-                let lastUpdated = new LastUpdatedSerializer(lastUpdatedFile, args.min_interval_seconds);
-                lastUpdated.loads();
-                
-                const urlEndPoint = "https://stockx.com/";
+                let lastUpdatedSerializer = new LastUpdatedSerializer(lastUpdatedFile, args.min_interval_seconds);
+                lastUpdatedSerializer.loads(async () => {
+                    const urlEndPoint = "https://stockx.com/";
 
-                let count = 0;
-                for (let key in staticInfo) {
-                    console.log(urlEndPoint + staticInfo[key].urlKey);
-                    await stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
-                        .then(((styleId) => {
-                            return p => {
-                                let sizePrices = parseProduct(p);
-                                count += 1;
-                                timeSeriesSerializer.update(new Date(), styleId, sizePrices);
-                                console.log("finished updating " + styleId);
-                            };
-                        })(key))
-                        .catch(err => {
-                            console.log(`Error scraping product details: ${err.message}`);
-                        });
-                }
-                console.log("finished updating " + count + " items");
+                    let count = 0;
+
+                    try {
+                        for (let key in staticInfo) {
+                            if (lastUpdatedSerializer.shouldUpdate(key)) {
+                                console.log(urlEndPoint + staticInfo[key].urlKey);
+                                await stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
+                                    .then(((styleId) => {
+                                        return p => {
+                                            let sizePrices = parseProduct(p);
+                                            count += 1;
+                                            timeSeriesSerializer.update(new Date(), styleId, sizePrices);
+                                            lastUpdatedSerializer.updateLastUpdated(styleId);
+                                            console.log("finished updating " + styleId);
+                                        };
+                                    })(key))
+                                    .catch(err => {
+                                        console.log(`Error scraping product details: ${err.message}`);
+                                    });
+                            } else {
+                                console.log("should skip " + key);
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Breaking out of scraping product details: ' + e.message);
+                    } finally {
+                        lastUpdatedSerializer.dumps();
+                        console.log("finished updating " + count + " items");
+                    }
+                });
             });
         } else {
             throw new Error("unrecognized mode " + args.mode);

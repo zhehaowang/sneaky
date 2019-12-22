@@ -37,7 +37,7 @@ class LastUpdatedSerializer {
             });
         return;
     }
-    loads() {
+    loads(callback) {
         if (fs.existsSync(this.lastUpdatedFile)) {
             fs.createReadStream(this.lastUpdatedFile)
                 .pipe(csvParser())
@@ -45,9 +45,11 @@ class LastUpdatedSerializer {
                     this.lastUpdated[data['style_id']] = Date.parse(data['stockx_last_updated']);
                 })
                 .on('end', () => {
-                    console.log(results);
+                    callback();
                 });
             return;
+        } else {
+            callback();
         }
     }
 }
