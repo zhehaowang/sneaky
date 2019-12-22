@@ -4,15 +4,17 @@ const stockxAPI = require('stockx-api');
 const stockX = new stockxAPI();
 
 const fs = require('fs');
-const csvParser = require('csv-parser');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+
+const LastUpdatedSerializer = require('./last_updated.js');
+const StaticInfoSerializer = require('./static_info_serializer.js');
 
 function setupArgs() {
     var ArgumentParser = require('argparse').ArgumentParser;
     var parser = new ArgumentParser({
         version: '1.0.0',
         addHelp: true,
-        description: 'entry point for stockx feed'
+        description: 'entry point for stockx feed.\nExample usage:\n' +
+            './stockx_feed.js -m query --kw ../stockx/query_kw.txt --pages 5\n'
     });
     parser.addArgument(['-m', '--mode'], {
         help: '[query|update] query builds the static mapping file, update takes a mapping and updates entries',
@@ -126,28 +128,39 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
 
             let currentTime = new Date().toISOString();
             let csvFilePath = "stockx.mapping." + currentTime + ".csv"
-            const csvWriter = createCsvWriter({
-                path: csvFilePath,
-                header: [
-                    {id: 'gender', title: 'stockx_gender'},
-                    {id: 'urlKey', title: 'stockx_url_key'},
-                    {id: 'colorWay', title: 'stockx_color_way'},
-                    {id: 'name', title: 'stockx_name'},
-                    {id: 'title', title: 'stockx_title'},
-                    {id: 'retail', title: 'stockx_retail_price'},
-                    {id: 'uuid', title: 'stockx_uuid'},
-                    {id: 'pid', title: 'stockx_pid'},
-                    {id: 'styleId', title: 'style_id'},
-                    {id: 'releaseDate', title: 'stockx_release_date'}
-                ]
-            });
-             
-            csvWriter.writeRecords(productArray)
-                .then(() => {
-                    console.log('Done writing query result to ' + csvFilePath);
-                });
-        } else if (args.mode == 'update') {
 
+            let staticInfoSerializer = new StaticInfoSerializer();
+            staticInfoSerializer.dumpStaticInfoToCsv(productArray, csvFilePath);
+        } else if (args.mode == 'update') {
+            if (!args.start_from) {
+                throw new Error("args.start_from is mandatory in update mode");
+            }
+            
+            await logIn('../../credentials/credentials.json');
+
+            let staticInfoSerializer = new StaticInfoSerializer();
+            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, (staticInfo) => {
+                let lastUpdatedFile = "last_updated_stockx.log";
+                if (args.last_updated) {
+                    lastUpdatedFile = args.last_updated;
+                }
+                
+                let lastUpdated = new LastUpdatedSerializer(lastUpdatedFile, args.min_interval_seconds);
+                lastUpdated.loads();
+                
+                const urlEndPoint = "https://stockx.com/";
+                for (let key in staticInfo) {
+                    console.log(urlEndPoint + staticInfo[key].urlKey);
+                    stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
+                        .then(product => {
+                            console.log(product)
+                        })
+                        .catch(err => {
+                            console.log(`Error scraping product details: ${err.message}`);
+                        });
+                    break;
+                }
+            });
         } else {
             throw new Error("unrecognized mode " + args.mode);
         }

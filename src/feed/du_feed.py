@@ -156,7 +156,7 @@ if __name__ == "__main__":
         
         last_updated_file = "last_updated.log"
         if args.last_updated:
-            last_updated_file = last_updated
+            last_updated_file = args.last_updated
 
         last_updated_serializer = LastUpdatedSerializer(last_updated_file, args.min_interval_seconds)
         time_series_serializer = TimeSeriesSerializer()
