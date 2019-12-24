@@ -34,6 +34,16 @@ class Strategy():
         return
 
     def run(self, options):
+        """
+        Strategy execution.
+        Steps:
+          - load data (done at this point),
+          - filter (configurable options),
+          - rank (configurable method)
+        
+        @return sorted list of
+          {(style_id, size_str): { mkt_data, annotation }}
+        """
         total_items = 0
         matched_items = []
         
@@ -151,6 +161,19 @@ class Strategy():
                     "du",
                     size_prices_profit_ratio[i]["stockx"]["prices"][-1]["ask_price"],
                     size_prices_profit_ratio[i]["du"]["prices"][-1]["bid_price"] / 100, "CNY")))
+        return
+
+class StrategyOutputSerializer():
+    def __init__(self):
+        return
+    
+    def to_csv(self, records):
+        return
+    
+    def to_html(self, records):
+        return
+
+    def to_stdout_string(self, records):
         return
 
 def parse_args():
