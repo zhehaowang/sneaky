@@ -96,11 +96,10 @@ class DuItem():
 
     def __str__(self):
         if self.style_id:
-            return "{} {} {} {} {}".format(
-                self.style_id, self.product_id, self.title, self.sold_num, self.size_prices)
+            return "Style ID: {}; Title: {}; Du Sold Num: {}".format(
+                self.style_id, self.title, self.sold_num)
         else:
-            return "{} {} {}".format(
-                self.product_id, self.title, self.sold_num)
+            return "Title: {}; Du Sold Num: {}".format(self.title, self.sold_num)
 
 class DuParser():
     def __init__(self):

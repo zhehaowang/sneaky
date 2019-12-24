@@ -10,4 +10,4 @@ class FxRate():
                 'http://rate-exchange-1.appspot.com/currency?from={}&to={}'.format(
                     in_curr, out_curr))
             self.fx_rates[(in_curr, out_curr)] = r.json()["rate"]
-        return in_amount * fx_rates[(in_curr, out_curr)]
+        return in_amount * self.fx_rates[(in_curr, out_curr)]

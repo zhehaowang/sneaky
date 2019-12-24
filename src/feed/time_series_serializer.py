@@ -33,7 +33,7 @@ class TimeSeriesSerializer():
         if not size:
             parent_path = self._find_parent_path(style_id)
             for f in glob.glob(parent_path + "*.json"):
-                size = os.path.basename(f).split(".")[0]
+                size = '.'.join(os.path.basename(f).split(".")[:-1])
                 with open(f, "r") as infile:
                     data = json.loads(infile.read())
                     size_prices[size] = data

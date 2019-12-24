@@ -12,7 +12,7 @@ class LastUpdatedSerializer {
         if (this.minUpdateTime === undefined || this.lastUpdated[styleId] === undefined) {
             return true;
         } else {
-            return (this.lastUpdated[styleId] - new Date()) / 1000 > this.minUpdateTime;
+            return (new Date() - this.lastUpdated[styleId]) / 1000 > this.minUpdateTime;
         }
     }
     updateLastUpdated(styleId) {
