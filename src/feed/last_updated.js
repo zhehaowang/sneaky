@@ -29,7 +29,10 @@ class LastUpdatedSerializer {
         });
         let records = [];
         for (let key in this.lastUpdated) {
-            records.push({styleId: key, lastUpdated: this.lastUpdated[key].toISOString()});
+            records.push({
+                styleId: key,
+                lastUpdated: this.lastUpdated[key].toISOString()
+            });
         }
         csvWriter.writeRecords(records)
             .then(() => {
@@ -42,7 +45,7 @@ class LastUpdatedSerializer {
             fs.createReadStream(this.lastUpdatedFile)
                 .pipe(csvParser())
                 .on('data', (data) => {
-                    this.lastUpdated[data['style_id']] = Date.parse(data['stockx_last_updated']);
+                    this.lastUpdated[data['style_id']] = new Date(Date.parse(data['stockx_last_updated']));
                 })
                 .on('end', () => {
                     callback();

@@ -37,6 +37,10 @@ function setupArgs() {
     parser.addArgument(['-i', '--min_interval_seconds'], {
         help: 'in update mode, only items whose last update time is at least this much from now will get updated'
     });
+    parser.addArgument(['--limit'], {
+        help: 'in update mode, the maximum number of pages to query. This is introduced \n' +
+              'such that we violate stockx\'s PerimeterX bot check less often.'
+    });
 
     return parser.parseArgs();
 }
@@ -107,7 +111,7 @@ function parseProduct(product) {
             annualHigh: mktData["annualHigh"],
             annualLow: mktData["annualLow"],
             volatility: mktData["volatility"],
-            lastSale72Hours: mktData["salesLast72Hours"],
+            salesLast72Hours: mktData["salesLast72Hours"],
             numberAsks: mktData["numberOfAsks"],
             numberBids: mktData["numberOfBids"]
         }
@@ -179,8 +183,18 @@ function parseProduct(product) {
                     let count = 0;
 
                     try {
+                        let maxUpdatePages = undefined;
+                        if (args.limit) {
+                            maxUpdatePages = parseInt(args.limit);
+                        }
+                        let pageCount = 0;
                         for (let key in staticInfo) {
                             if (lastUpdatedSerializer.shouldUpdate(key)) {
+                                pageCount += 1;
+                                if (maxUpdatePages !== undefined && pageCount > maxUpdatePages) {
+                                    console.log("No more jobs due to reaching max update pages " + maxUpdatePages);
+                                    break;
+                                }
                                 console.log(urlEndPoint + staticInfo[key].urlKey);
                                 await stockX.fetchProductDetails(urlEndPoint + staticInfo[key].urlKey)
                                     .then(((styleId) => {
