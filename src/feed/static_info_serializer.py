@@ -28,23 +28,14 @@ class StaticInfoSerializer():
     def load_static_info_from_csv(self, filename):
         result = {}
         with open(filename, "r") as infile:
-            rr = csv.reader(infile)
-            count = 0
+            rr = csv.DictReader(infile)
             for row in rr:
-                count += 1
-                if count == 1:
-                    continue
-                else:
-                    style_id = row[0]
-                    product_id = row[1]
-                    title = row[2]
-                    release_date = row[3]
-                    gender = row[4]
+                product_id = row["du_product_id"]
 
-                    item = DuItem(product_id, title, 0)
-                    item.release_date = release_date
-                    item.style_id = style_id
-                    item.gender = row[4]
-                    result[product_id] = item
+                item = DuItem(product_id, row["du_title"], 0)
+                item.release_date = row["release_date"]
+                item.style_id = row["style_id"]
+                item.gender = row["gender"]
+                result[product_id] = item
         return result
 

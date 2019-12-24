@@ -1,5 +1,6 @@
 import json
 import os
+import glob
 import pathlib
 
 from du_response_parser import SaleRecord
@@ -8,8 +9,11 @@ class TimeSeriesSerializer():
     def __init__(self):
         return
     
-    def find_path(self, style_id, size):
+    def _find_path(self, style_id, size):
         return "../data/{}/{}.json".format(style_id, size)
+
+    def _find_parent_path(self, style_id):
+        return "../data/{}/".format(style_id)
 
     def get_size_transactions(self, transactions):
         result = {}
@@ -24,9 +28,25 @@ class TimeSeriesSerializer():
                 })
         return result
 
+    def get(self, style_id, size=None):
+        size_prices = {}
+        if not size:
+            parent_path = self._find_parent_path(style_id)
+            for f in glob.glob(parent_path + "*.json"):
+                size = os.path.basename(f).split(".")[0]
+                with open(f, "r") as infile:
+                    data = json.loads(infile.read())
+                    size_prices[size] = data
+        else:
+            f = self._find_path(style_id, size)
+            with open(f, "r") as infile:
+                data = json.loads(infile.read())
+                size_prices[size] = data
+        return size_prices
+
     def update(self, venue, update_time, style_id, size_prices, size_transactions):
         for size in size_prices:
-            outfile = self.find_path(style_id, size)
+            outfile = self._find_path(style_id, size)
             if os.path.isfile(outfile):
                 with open(outfile, "r") as infile:
                     data = json.loads(infile.read())
