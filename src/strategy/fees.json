@@ -1,0 +1,17 @@
+{
+    "stockx": {
+        "buy_shipping_usd": 13.95
+    },
+    "du": {
+        "commission_percent": 9.5,
+        "tech_service_percent": 3.5,
+        "transfer_percent": 1,
+        "packaging_cny": 8.0,
+        "verification_cny": 15.0,
+        "service_cny": 10.0
+    },
+    "shipping": {
+        "stockx_du_usd": 15.0
+    },
+    "comments": "costs are per pair"
+}
