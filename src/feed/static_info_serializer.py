@@ -25,7 +25,7 @@ class StaticInfoSerializer():
                 wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"], row["gender"]])
         print("dumped {} entries to {}".format(len(static_items), static_mapping_file))
 
-    def load_static_info_from_csv(self, filename):
+    def load_static_info_from_csv(self, filename, return_key="style_id"):
         result = {}
         with open(filename, "r") as infile:
             rr = csv.DictReader(infile)
@@ -36,6 +36,5 @@ class StaticInfoSerializer():
                 item.release_date = row["release_date"]
                 item.style_id = row["style_id"]
                 item.gender = row["gender"]
-                result[product_id] = item
+                result[row[return_key]] = item
         return result
-

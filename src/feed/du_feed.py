@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
         keywords = args.kw.split(',')
         if args.start_from:
-            result_items = serializer.load_static_info_from_csv(args.start_from)
+            result_items = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
         else:
             result_items = {}
 
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         last_updated_serializer = LastUpdatedSerializer(last_updated_file, args.min_interval_seconds)
         time_series_serializer = TimeSeriesSerializer()
 
-        static_info = serializer.load_static_info_from_csv(args.start_from)
+        static_info = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
         for product_id in static_info:
             style_id = static_info[product_id].style_id
             if last_updated_serializer.should_update(style_id, "du"):
