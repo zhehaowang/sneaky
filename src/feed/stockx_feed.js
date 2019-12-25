@@ -68,7 +68,7 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
     if (keyword === "") {
         return [];
     }
-    const resultsPerPage = 20;
+    const resultsPerPage = 40;
     const productList = await stockX.searchProducts(keyword, {
         limit: pages * resultsPerPage
     });
@@ -145,21 +145,25 @@ function parseProduct(product) {
                 // parsing args.kw arg from cmdline
                 keywordsList = args.kw.split(',');
             }
-            
+
             let productArray = [];
-            let seenStyleIds = {};
-            for (let i in keywordsList) {
-                let products = await queryByKeyword(keywordsList[i], parseInt(args.pages), seenStyleIds);
-                productArray = productArray.concat(products);
-            }
-            
-            console.log("found " + productArray.length + " unique items from query " + keywordsList.join());
+            try {
+                let seenStyleIds = {};
+                for (let i in keywordsList) {
+                    let products = await queryByKeyword(keywordsList[i], parseInt(args.pages), seenStyleIds);
+                    productArray = productArray.concat(products);
+                }
+            } catch (e) {
+                console.log('Breaking out of querying models: ' + e.message);
+            } finally {
+                console.log("found " + productArray.length + " unique items from query " + keywordsList.join());
 
-            let currentTime = new Date().toISOString();
-            let csvFilePath = "stockx.mapping." + currentTime + ".csv"
-
-            let staticInfoSerializer = new StaticInfoSerializer();
-            staticInfoSerializer.dumpStaticInfoToCsv(productArray, csvFilePath);
+                let currentTime = new Date().toISOString();
+                let csvFilePath = "stockx.mapping." + currentTime + ".csv"
+    
+                let staticInfoSerializer = new StaticInfoSerializer();
+                staticInfoSerializer.dumpStaticInfoToCsv(productArray, csvFilePath);
+            }            
         } else if (args.mode == 'update') {
             if (!args.start_from) {
                 throw new Error("args.start_from is mandatory in update mode");
