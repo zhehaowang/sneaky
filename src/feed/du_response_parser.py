@@ -70,11 +70,18 @@ class DuItem():
     
     @staticmethod
     def infer_gender(title):
-        if "nike" in title.lower():
-            # TODO: verify women handling
-            return "eu-nike-men"
-        elif "adidas" in title.lower() or "jordan" in title.lower():
-            return "eu-adidas-men"
+        # TODO: smarter women handling
+        lt = title.lower()
+        if "nike" in lt or "jordan" in lt or "airforce" in lt:
+            if "女" in lt:
+                return "eu-nike-women"
+            else:
+                return "eu-nike-men"
+        elif "adidas" in lt or "yeezy" in lt:
+            if "女" in lt:
+                return "eu-adidas-women"
+            else:
+                return "eu-adidas-men"
         else:
             raise RuntimeError("failed to infer gender from {}".format(title))
 
@@ -107,11 +114,19 @@ class DuParser():
     
     @staticmethod
     def sanitize_size(size_str, in_code, out_code='us'):
-        match = re.match("^([0-9.]+)[^0-9.]*", size_str)
-        if not match:
-            raise RuntimeError("failed to parse size {}".format(size_str))
-        # TODO: is float key a good idea?
-        return get_shoe_size(float(match.group(1)), in_code, out_code)
+        sanitized_size_str = size_str.strip().strip('码')
+        if re.match("^[0-9]+$", sanitized_size_str):
+            # size like 36 becomes 36.0
+            sanitized_size_str += ".0"
+        elif re.match("^[0-9]+Y$", sanitized_size_str):
+            # size like 5Y becomes 5.0Y
+            sanitized_size_str = sanitized_size_str.strip("Y") + ".0Y"
+        elif re.match("^[0-9]+\.[05]Y?$", sanitized_size_str):
+            # size like 36.5 or 5.0Y is fine
+            pass
+        else:
+            raise RuntimeError("unrecognized size {}".format(size_str))
+        return get_shoe_size(sanitized_size_str, in_code, out_code)
 
     @staticmethod
     def sanitize_time(time_str):
@@ -123,7 +138,7 @@ class DuParser():
 
     @staticmethod
     def sanitize_style_id(style_id):
-        return str(style_id).strip()
+        return str(style_id).strip().upper()
 
     @staticmethod
     def get_sale_id(sales_list_obj):

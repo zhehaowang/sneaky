@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import json
 import requests
 import datetime
@@ -7,6 +8,7 @@ import datetime
 import pprint
 import csv
 import argparse
+import pprint
 
 from du_url_builder import DuRequestBuilder
 from du_response_parser import DuParser, SaleRecord, DuItem
@@ -25,6 +27,7 @@ class DuFeed():
         self.builder = DuRequestBuilder()
 
     def search_pages(self, keyword, pages=0, result_items=None):
+        print("querying keyword {}".format(keyword))
         max_page = pages
         if max_page == 0:
             request_url = self.builder.get_search_by_keywords_url(keyword, 0, 1, 0)
@@ -68,8 +71,10 @@ class DuFeed():
     def populate_item_details(self, in_item, product_id):
         request_url = self.builder.get_product_detail_url(product_id)
         product_detail_response = send_du_request(request_url)
+        print("querying details for {} {}".format(product_id, in_item))
         style_id, size_list, release_date = self.parser.parse_product_detail_response(
             product_detail_response.text)
+        print("style id: {}".format(style_id))
         in_item.populate_details(style_id, size_list, release_date)
         return
 
@@ -111,10 +116,14 @@ if __name__ == "__main__":
           ./du_feed.py --mode update --start_from du.mapping.20191206-211125.csv --min_interval_seconds 3600
           ./du_feed.py --mode query --kw aj --pages 2 --start_from du.mapping.20191206-145908.csv
           ./du_feed.py --mode query --kw aj --pages 30
+          ./du_feed.py --mode get --style_id 575441-028 --start_from du.mapping.20191221-150959.csv
     """)
     parser.add_argument(
         "--mode",
-        help=("[query|update] query builds the static mapping file, update takes a mapping and updates entries"))
+        help=("[query|update|get]"
+        "query builds the static mapping file,"
+        "update takes a mapping and updates entries,"
+        "get retrieves product detail for a style id"))
     parser.add_argument(
         "--kw",
         help="in query mode, the query keyword")
@@ -131,24 +140,34 @@ if __name__ == "__main__":
     parser.add_argument(
         "--min_interval_seconds",
         help="in update mode, only items whose last update time is at least this much from now will get updated")
+    parser.add_argument(
+        "--style_id",
+        help="in get mode, get product detail for this style_id. No effect in other modes"
+    )
     args = parser.parse_args()
     feed = DuFeed()
     serializer = StaticInfoSerializer()
+    pp = pprint.PrettyPrinter()
 
     if args.mode == "query":
         if not args.kw:
             raise RuntimeError("args.kw is mandatory in query mode")
         if not args.pages:
             raise RuntimeError("args.pages is mandatory in query mode")
-
-        keywords = args.kw.split(',')
+        
+        keywords = []
+        if os.path.isfile(args.kw):
+            with open(args.kw, 'r') as infile:
+                keywords = infile.read().split('\n')
+        else:
+            keywords = args.kw.split(',')
         if args.start_from:
             result_items = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
         else:
             result_items = {}
 
         for keyword in keywords:
-            result_items = feed.search_pages(keyword, pages=int(args.pages), result_items=result_items)
+            result_items = feed.search_pages(keyword.strip(), pages=int(args.pages), result_items=result_items)
         serializer.dump_static_info_to_csv(result_items)
     elif args.mode == "update":
         if not args.start_from:
@@ -165,6 +184,7 @@ if __name__ == "__main__":
         for product_id in static_info:
             style_id = static_info[product_id].style_id
             if last_updated_serializer.should_update(style_id, "du"):
+                print('working with {} style_id {} brand {}'.format(product_id, style_id, static_info[product_id].title))
                 try:
                     gender = static_info[product_id].gender
                     size_prices = feed.get_prices_from_product_id(product_id)
@@ -182,6 +202,21 @@ if __name__ == "__main__":
                 last_updated_serializer.save_last_updated()
             else:
                 print("should skip {}".format(product_id))
+    elif args.mode == "get":
+        if not args.start_from:
+            raise RuntimeError("args.start_from is required in get mode")
+        if not args.style_id:
+            raise RuntimeError("args.style_id is required in get mode")
+        static_info = serializer.load_static_info_from_csv(args.start_from, return_key="style_id")
+        if args.style_id in static_info:
+            static_item = static_info[args.style_id]
+            print(static_item)
+            request_url = feed.builder.get_product_detail_url(static_item.product_id)
+            product_detail_response = send_du_request(request_url)
+            response_obj = json.loads(product_detail_response.text)
+            pp.pprint(response_obj)
+        else:
+            print("cannot find product info for {} from {}".format(args.style_id, args.start_from))
     else:
         raise RuntimeError("Unsupported mode {}".format(args.mode))
 
