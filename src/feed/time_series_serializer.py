@@ -6,14 +6,16 @@ import pathlib
 from du_response_parser import SaleRecord
 
 class TimeSeriesSerializer():
-    def __init__(self):
+    def __init__(self, parent_folder=None):
+        if not parent_folder:
+            self.parent_folder = "../data"
         return
     
     def _find_path(self, style_id, size):
-        return "../data/{}/{}.json".format(style_id, size)
+        return "{}/{}/{}.json".format(self.parent_folder, style_id, size)
 
     def _find_parent_path(self, style_id):
-        return "../data/{}/".format(style_id)
+        return "{}/{}/".format(self.parent_folder, style_id)
 
     def get_size_transactions(self, transactions):
         result = {}
@@ -62,7 +64,7 @@ class TimeSeriesSerializer():
                 }
             
             prices = size_prices[size]
-            data[venue]["prices"].append({
+            data[venue]["prices"].insert(0, {
                 "time": update_time.strftime("%Y%m%d-%H%M%S"),
                 "bid_price": prices["bid_price"] if "bid_price" in prices else None,
                 "ask_price": prices["ask_price"] if "ask_price" in prices else None

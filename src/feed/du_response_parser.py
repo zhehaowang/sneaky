@@ -5,7 +5,7 @@ import json
 import datetime
 import hashlib
 
-from sizer import get_shoe_size, has_women_only_adidas_size
+from sizer import Sizer
 
 def timestr_to_epoch(timestr, timenow=None):
     """
@@ -109,12 +109,13 @@ class DuItem():
             return "Title: {}; Du Sold Num: {}".format(self.title, self.sold_num)
 
 class DuParser():
-    def __init__(self):
+    def __init__(self, sizer):
+        self.sizer = sizer
         return
     
     @staticmethod
-    def sanitize_size(size_str, in_code, out_code='us'):
-        sanitized_size_str = size_str.strip().strip('码')
+    def sanitize_size(sizer, size_str, in_code, out_code='us'):
+        sanitized_size_str = size_str.strip().strip('码').upper()
         if re.match("^[0-9]+$", sanitized_size_str):
             # size like 36 becomes 36.0
             sanitized_size_str += ".0"
@@ -126,7 +127,7 @@ class DuParser():
             pass
         else:
             raise RuntimeError("unrecognized size {}".format(size_str))
-        return get_shoe_size(sanitized_size_str, in_code, out_code)
+        return sizer.get_shoe_size(sanitized_size_str, in_code, out_code)
 
     @staticmethod
     def sanitize_time(time_str):
@@ -158,7 +159,7 @@ class DuParser():
         for s in sales_list:
             result.append(
                 SaleRecord(
-                    self.sanitize_size(s['sizeDesc'], in_code),
+                    self.sanitize_size(self.sizer, s['sizeDesc'], in_code),
                     self.sanitize_price(s['price']),
                     self.sanitize_time(s['formatTime']),
                     id=self.get_sale_id(s)))
@@ -180,7 +181,7 @@ class DuParser():
         for s in size_list:
             bid = s["buyerBiddingItem"]
             bid_price = self.sanitize_price(bid["price"])
-            size = self.sanitize_size(s["formatSize"], in_code)
+            size = self.sanitize_size(self.sizer, s["formatSize"], in_code)
             result[size] = {
                 "bid_price": bid_price
             }

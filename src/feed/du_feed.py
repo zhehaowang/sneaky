@@ -15,6 +15,7 @@ from du_response_parser import DuParser, SaleRecord, DuItem
 from last_updated import LastUpdatedSerializer
 from time_series_serializer import TimeSeriesSerializer
 from static_info_serializer import StaticInfoSerializer
+from sizer import Sizer
 
 def send_du_request(url):
     if __debug__:
@@ -23,7 +24,8 @@ def send_du_request(url):
 
 class DuFeed():
     def __init__(self):
-        self.parser = DuParser()
+        self.sizer = Sizer()
+        self.parser = DuParser(self.sizer)
         self.builder = DuRequestBuilder()
 
     def search_pages(self, keyword, pages=0, result_items=None):
@@ -162,7 +164,7 @@ if __name__ == "__main__":
         else:
             keywords = args.kw.split(',')
         if args.start_from:
-            result_items = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
+            result_items, _ = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
         else:
             result_items = {}
 
@@ -180,7 +182,7 @@ if __name__ == "__main__":
         last_updated_serializer = LastUpdatedSerializer(last_updated_file, args.min_interval_seconds)
         time_series_serializer = TimeSeriesSerializer()
 
-        static_info = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
+        static_info, _ = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
         for product_id in static_info:
             style_id = static_info[product_id].style_id
             if last_updated_serializer.should_update(style_id, "du"):
@@ -207,7 +209,7 @@ if __name__ == "__main__":
             raise RuntimeError("args.start_from is required in get mode")
         if not args.style_id:
             raise RuntimeError("args.style_id is required in get mode")
-        static_info = serializer.load_static_info_from_csv(args.start_from, return_key="style_id")
+        static_info, _ = serializer.load_static_info_from_csv(args.start_from, return_key="style_id")
         if args.style_id in static_info:
             static_item = static_info[args.style_id]
             print(static_item)

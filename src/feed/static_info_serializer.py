@@ -25,8 +25,12 @@ class StaticInfoSerializer():
                 wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"], row["gender"]])
         print("dumped {} entries to {}".format(len(static_items), static_mapping_file))
 
+    # TODO: DuItem should be decoupled from StaticItem, for now this is implemented as extras
     def load_static_info_from_csv(self, filename, return_key="style_id"):
         result = {}
+        # for strategy result serialization use
+        extras = {}
+
         with open(filename, "r") as infile:
             rr = csv.DictReader(infile)
             for row in rr:
@@ -37,4 +41,13 @@ class StaticInfoSerializer():
                 item.style_id = row["style_id"]
                 item.gender = row["gender"]
                 result[row[return_key]] = item
-        return result
+
+                extras[row[return_key]] = {}
+                if "stockx_url_key" in row:
+                    extras[row[return_key]]["stockx_url_key"] = row["stockx_url_key"]
+                if "stockx_retail_price" in row:
+                    extras[row[return_key]]["stockx_retail_price"] = row["stockx_retail_price"]
+                if "stockx_release_date" in row:
+                    extras[row[return_key]]["stockx_release_date"] = row["stockx_release_date"]
+
+        return result, extras
