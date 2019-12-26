@@ -12,21 +12,23 @@ from static_info_serializer import StaticInfoSerializer
 from time_series_serializer import TimeSeriesSerializer
 from fees import Fees
 from fx_rate import FxRate
+from result_serializer import ResultSerializer
 
 class Strategy():
     def __init__(self, fees_file, fx_rate):
         self.static_info = {}
         self.fees = Fees(fees_file, fx_rate)
         self.fx_rate = fx_rate
+        self.serializer = ResultSerializer(self.fees, self.fx_rate)
         return
     
     def load_static_info(self, static_info_file):
         serializer = StaticInfoSerializer()
-        self.static_info = serializer.load_static_info_from_csv(static_info_file, return_key="style_id")
+        self.static_info, self.static_info_extras = serializer.load_static_info_from_csv(static_info_file, return_key="style_id")
         return
 
-    def load_all_size_prices(self, style_ids=None):
-        serializer = TimeSeriesSerializer()
+    def load_all_size_prices(self, data_folder):
+        serializer = TimeSeriesSerializer(data_folder)
         self.all_size_prices = {}
         for style_id in self.static_info:
             size_prices = serializer.get(style_id)
@@ -59,7 +61,9 @@ class Strategy():
             # TODO: here we want last reading to be valid, not necessarily
             if not ("du" in v and "stockx" in v):
                 return False
-            if not v["du"]["prices"][-1]["bid_price"] or not v["stockx"]["prices"][-1]["ask_price"]:
+            if not "bid_price" in v["du"]["prices"][0] or not "ask_price" in v["stockx"]["prices"][0]:
+                return False
+            if not v["du"]["prices"][0]["bid_price"] or not v["stockx"]["prices"][0]["ask_price"]:
                 return False
             return True
         size_prices_has_data = {
@@ -72,9 +76,8 @@ class Strategy():
             # 3 days
             if len(v["du"]["prices"]) == 0 or len(v["stockx"]["prices"]) == 0:
                 return False
-            # TODO: here we are assuming ordered. Not unnecessarily
-            last_du_time = datetime.datetime.strptime(v["du"]["prices"][-1]["time"], "%Y%m%d-%H%M%S")
-            last_stockx_time = datetime.datetime.strptime(v["stockx"]["prices"][-1]["time"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            last_du_time = datetime.datetime.strptime(v["du"]["prices"][0]["time"], "%Y%m%d-%H%M%S")
+            last_stockx_time = datetime.datetime.strptime(v["stockx"]["prices"][0]["time"], "%Y-%m-%dT%H:%M:%S.%fZ")
             if (datetime.datetime.now() - last_du_time).total_seconds() > data_lifetime_seconds:
                 return False
             if (datetime.datetime.now() - last_stockx_time).total_seconds() > data_lifetime_seconds:
@@ -100,80 +103,64 @@ class Strategy():
         }
         print('total (style_id, size) pairs {} with fresh transactions'.format(len(size_prices_has_fresh_transactions)))
 
-        # filter items by total profit ratio cutoff
-        if "cutoff_net_profit_ratio" in options:
-            def satisfies_total_profit_ratio(v, ratio):
-                stockx_mid = 0.5 * (v["stockx"]["prices"][-1]["bid_price"] + v["stockx"]["prices"][-1]["ask_price"])
-                du_bid = v["du"]["prices"][-1]["bid_price"] / 100
-                profit_ratio_mid = self.fees.get_profit_percent(
-                    "stockx", "du", stockx_mid, du_bid, "CNY")
-                if profit_ratio_mid > ratio:
-                    profit_ratio_cross = self.fees.get_profit_percent(
-                        "stockx", "du", v["stockx"]["prices"][-1]["ask_price"], du_bid, "CNY")
-                    v["annotation"] = {
-                        "profit_ratio_mid": profit_ratio_mid,
-                        "profit_ratio_cross": profit_ratio_cross
-                    }
-                    return True
-                else:
-                    return False
-            size_prices_profit_ratio = {
-                k : v for k, v in size_prices_has_fresh_transactions.items() if satisfies_total_profit_ratio(v, options["cutoff_net_profit_ratio"])
-            }
-            print('total (style_id, size) pairs {} satisfying profit cutoff ratio of {}'.format(len(size_prices_profit_ratio), options["cutoff_net_profit_ratio"]))
-        else:
-            size_prices_profit_ratio = size_prices_has_fresh_transactions
-                    
-        print("total results {}".format(len(size_prices_profit_ratio)))
-        for i in size_prices_profit_ratio:
-            style_id, size = i
-            item = self.static_info[style_id]
-            size_prices_profit_ratio[i]["annotation"]["du_price_usd"] = self.fx_rate.get_spot_fx(
-                size_prices_profit_ratio[i]["du"]["prices"][-1]["bid_price"] / 100,
-                "CNY", "USD"
-            )
-            size_prices_profit_ratio[i]["annotation"]["du_last_transaction_usd"] = self.fx_rate.get_spot_fx(
-                size_prices_profit_ratio[i]["du"]["transactions"][0]["price"] / 100,
-                "CNY", "USD"
-            )
+        # filter items by total profit ratio 
+        def satisfies_total_profit_ratio(v, value, ratio_or_value="ratio", source="mid", dest="listing"):
+            if source == "mid":
+                stockx_px = 0.5 * (v["stockx"]["prices"][0]["bid_price"] + v["stockx"]["prices"][0]["ask_price"])
+            elif source == "ask":
+                stockx_px = v["stockx"]["prices"][0]["ask_price"]
+            elif source == "bid":
+                stockx_px = v["stockx"]["prices"][0]["bid_price"]
+            else:
+                raise RuntimeError("unrecognized ratio filter option {}".format(source))
+            if dest == "listing":
+                du_bid = v["du"]["prices"][0]["bid_price"] / 100
+            elif dest == "last":
+                du_bid = v["du"]["transactions"][0]["price"] / 100
+            else:
+                raise RuntimeError("unrecognized ratio filter option {}".format(dest))
+            if ratio_or_value == "ratio":
+                profit_value = self.fees.get_profit_percent(
+                    "stockx", "du", stockx_px, du_bid, "CNY")
+            elif ratio_or_value == "value":
+                profit_value = self.fees.get_profit_value(
+                    "stockx", "du", stockx_px, du_bid, "CNY")
+            else:
+                raise RuntimeError("unrecognizied ratio_or_value {}".format(ratio_or_value))
+            if profit_value > value:
+                if "annotation" not in v:
+                    v["annotation"] = {}
+                v["annotation"]["profit_{}_{}_to_{}".format(ratio_or_value, source, dest)] = profit_value
+                return True
+            else:
+                return False
 
-            print(i, item)
-            # print(size_prices_profit_ratio[i])
-            print("  du listing price:     {:.2f} CNY {:.2f} USD\n"
-                  "  du transaction price: {:.2f} CNY {:.2f} USD\n"
-                  "  du transaction time:  {}\n"
-                  "  stockx bid:           {:.2f} USD\n"
-                  "  stockx ask:           {:.2f} USD\n"
-                  "  profit ratio (mid):   {:.2f} %\n"
-                  "  profit ratio (cross): {:.2f} %\n"
-                  "  profit value (cross): {:.2f} USD\n".format(
-                size_prices_profit_ratio[i]["du"]["prices"][-1]["bid_price"] / 100,
-                size_prices_profit_ratio[i]["annotation"]["du_price_usd"],
-                size_prices_profit_ratio[i]["du"]["transactions"][0]["price"] / 100,
-                size_prices_profit_ratio[i]["annotation"]["du_last_transaction_usd"],
-                size_prices_profit_ratio[i]["du"]["transactions"][0]["time"],
-                size_prices_profit_ratio[i]["stockx"]["prices"][-1]["ask_price"],
-                size_prices_profit_ratio[i]["stockx"]["prices"][-1]["bid_price"],
-                size_prices_profit_ratio[i]["annotation"]["profit_ratio_mid"] * 100,
-                size_prices_profit_ratio[i]["annotation"]["profit_ratio_cross"] * 100,
-                self.fees.get_profit_value(
-                    "stockx",
-                    "du",
-                    size_prices_profit_ratio[i]["stockx"]["prices"][-1]["ask_price"],
-                    size_prices_profit_ratio[i]["du"]["prices"][-1]["bid_price"] / 100, "CNY")))
-        return
+        size_prices_profit_cutoff = size_prices_has_fresh_transactions
+        for source in ["bid", "mid", "ask"]:
+            for dest in ["listing", "last"]:
+                for ratio_or_value in ["ratio", "value"]:
+                    option_name = "cutoff_net_profit_{}_{}_to_{}".format(ratio_or_value, source, dest)
+                    if option_name in options:
+                        size_prices_profit_cutoff = {
+                            k : v for k, v in size_prices_profit_cutoff.items() if satisfies_total_profit_ratio(v, options[option_name], ratio_or_value, source, dest)
+                        }
+                        print('total (style_id, size) pairs {} satisfying profit cutoff {} ({} to {}) of {}'.format(
+                            len(size_prices_profit_cutoff), ratio_or_value, source, dest, options[option_name]))
+                
+        # sort
+        result_array = [{
+            "data": size_prices_profit_cutoff[k],
+            "identifier": k
+        } for k in size_prices_profit_cutoff]
 
-class StrategyOutputSerializer():
-    def __init__(self):
-        return
-    
-    def to_csv(self, records):
-        return
-    
-    def to_html(self, records):
-        return
+        # TODO: we should consider making another query to stockx for high, low, volatility, etc for the recommended item 
+        # as those shouldn't be static but would be useful in decision making.
+        result_array.sort(key=lambda x : x["data"]["annotation"][options["sort"]], reverse=True)
+        print("total results {}".format(len(result_array)))
+        return result_array
 
-    def to_stdout_string(self, records):
+    def report(self, sorted_size_prices):
+        self.serializer.to_str(sorted_size_prices, self.static_info, self.static_info_extras)
         return
 
 def parse_args():
@@ -184,8 +171,10 @@ def parse_args():
     """)
     parser.add_argument(
         "--start_from",
-        help="in query mode, continue from entries not already populated in given\n"
-             "in update mode, the file from which to load the product_id, style_id mapping")
+        help="the merged static info containing all eligible pairs to ask for")
+    parser.add_argument(
+        "--data_folder",
+        help="the data folder from where to look for price and transaction readings")
     args = parser.parse_args()
     if not args.start_from:
         raise RuntimeError("args.start_from is required in strategy")
@@ -202,8 +191,6 @@ if __name__ == "__main__":
     fx_rate = FxRate()
     strategy = Strategy("fees.json", fx_rate)
     strategy.load_static_info(args.start_from)
-    strategy.load_all_size_prices()
-    strategy.run(parse_strategy_options("options.json"))
-
-
-
+    strategy.load_all_size_prices(args.data_folder)
+    result = strategy.run(parse_strategy_options("options.json"))
+    strategy.report(result)
