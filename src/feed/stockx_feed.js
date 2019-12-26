@@ -106,14 +106,14 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
 }
 
 function sanitizeSize(sizeStr) {
-    let sanitizedSizeStr = sizeStr;
-    if (sanitizedSizeStr.match(/^[0-9]$/g)) {
+    let sanitizedSizeStr = sizeStr.toUpperCase().trim();
+    if (sanitizedSizeStr.match(/^[0-9]+$/g)) {
         // size like 36 becomes 36.0
         sanitizedSizeStr += ".0";
     } else if (sanitizedSizeStr.match(/^[0-9]+Y$/g)) {
         // size like 5Y becomes 5.0Y
         sanitizedSizeStr = sanitizedSizeStr.slice(0, -1) + ".0Y"
-    } else if (re.match(/^[0-9]+\.[05]Y?$/g, sanitized_size_str)) {
+    } else if (sanitizedSizeStr.match(/^[0-9]+\.[05]Y?$/g)) {
         // size like 36.5 or 5.0Y is fine
     } else {
         throw new Error(`unable to parse size ${sanitizedSizeStr}`);

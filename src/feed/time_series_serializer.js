@@ -31,7 +31,7 @@ class TimeSeriesSerializer {
                 }
             }
 
-            data[this.venue].prices.push({
+            data[this.venue].prices.unshift({
                 time: updateTime.toISOString(),
                 bid_price: sizePrices[size]["bestBid"],
                 ask_price: sizePrices[size]["bestAsk"],
