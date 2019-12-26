@@ -8,7 +8,7 @@ class TimeSeriesSerializer {
     }
 
     findPath(styleId, size) {
-        return "../data/" + styleId + "/" + parseFloat(size).toFixed(1) + ".json"
+        return "../data/" + styleId + "/" + size + ".json"
     }
 
     update(updateTime, styleId, sizePrices) {

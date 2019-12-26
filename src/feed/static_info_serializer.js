@@ -38,7 +38,7 @@ class StaticInfoSerializer {
             fs.createReadStream(fileName)
                 .pipe(csvParser())
                 .on('data', (data) => {
-                    result[data['sanitized_style_id']] = {
+                    result[data['style_id']] = {
                         gender: data['stockx_gender'],
                         urlKey: data['stockx_url_key'],
 

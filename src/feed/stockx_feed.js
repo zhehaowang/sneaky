@@ -9,16 +9,22 @@ const LastUpdatedSerializer = require('./last_updated.js');
 const StaticInfoSerializer = require('./static_info_serializer.js');
 const TimeSeriesSerializer = require('./time_series_serializer.js');
 
+const urlEndPoint = "https://stockx.com/";
+
 function setupArgs() {
     var ArgumentParser = require('argparse').ArgumentParser;
     var parser = new ArgumentParser({
         version: '1.0.0',
         addHelp: true,
         description: 'entry point for stockx feed.\nExample usage:\n' +
-            './stockx_feed.js -m query --kw ../stockx/query_kw.txt --pages 5\n'
+            './stockx_feed.js -m query --kw ../stockx/query_kw.txt --pages 10\n' +
+            './stockx_feed.js --mode get --style_id 575441-028 --start_from stockx.mapping.2019-12-21T18\:58\:50.487Z.csv\n'
     });
     parser.addArgument(['-m', '--mode'], {
-        help: '[query|update] query builds the static mapping file, update takes a mapping and updates entries',
+        help: '[query|update|get]\n' + 
+              'query builds the static mapping file, \n' +
+              'update takes a mapping and updates entries, \n' +
+              'get mode takes a style_id and gets product detail',
         required: true
     });
     parser.addArgument(['-k', '--kw'], {
@@ -26,7 +32,7 @@ function setupArgs() {
     });
     parser.addArgument(['-s', '--start_from'], {
         help: 'in query mode, continue from entries not already populated in given\n' +
-            'in update mode, the file from which to load the product_id, style_id mapping'
+              'in update mode, the file from which to load the product_id, style_id mapping'
     });
     parser.addArgument(['-n', '--pages'], {
         help: 'in query mode, the number of pages to query'
@@ -41,6 +47,9 @@ function setupArgs() {
         help: 'in update mode, the maximum number of pages to query. This is introduced \n' +
               'such that we violate stockx\'s PerimeterX bot check less often.'
     });
+    parser.addArgument(['--style_id'], {
+        help: 'in get mode, get product detail for this style_id. No effect in other modes'
+    })
 
     return parser.parseArgs();
 }
@@ -96,13 +105,29 @@ async function queryByKeyword(keyword, pages, seenStyleIds) {
     return productArray;
 }
 
+function sanitizeSize(sizeStr) {
+    let sanitizedSizeStr = sizeStr;
+    if (sanitizedSizeStr.match(/^[0-9]$/g)) {
+        // size like 36 becomes 36.0
+        sanitizedSizeStr += ".0";
+    } else if (sanitizedSizeStr.match(/^[0-9]+Y$/g)) {
+        // size like 5Y becomes 5.0Y
+        sanitizedSizeStr = sanitizedSizeStr.slice(0, -1) + ".0Y"
+    } else if (re.match(/^[0-9]+\.[05]Y?$/g, sanitized_size_str)) {
+        // size like 36.5 or 5.0Y is fine
+    } else {
+        throw new Error(`unable to parse size ${sanitizedSizeStr}`);
+    }
+    return sanitizedSizeStr;
+}
+
 function parseProduct(product) {
     let variants = product["variants"];
     let sizePrices = {};
 
     for (v in variants) {
         let variant = variants[v];
-        let size = variant["size"];
+        let size = sanitizeSize(variant["size"]);
         let mktData = variant["market"];
 
         sizePrices[size] = {
@@ -125,6 +150,13 @@ function parseProduct(product) {
         var args = setupArgs();
 
         if (args.mode == 'query') {
+            // stockx.20191225.csv
+            // c969a04a-4e14-4c18-85bf-78d94dd4dbaa : make sure style_id like 834276-015_2 is alright
+            // e8dd647d-d068-439e-82d5-e7f334df68a0 : handle empty styleID
+            // investigate with
+            // csvcut -c 2,9 stockx.20191225.csv | csvlook | less
+            // expect merged data to be clean, check
+            // csvcut -c 2,4,9,15 merged.20191225.csv | csvlook | less -S
             if (!args.kw) {
                 throw new Error("args.kw is mandatory in query mode");
             }
@@ -182,8 +214,6 @@ function parseProduct(product) {
                 
                 let lastUpdatedSerializer = new LastUpdatedSerializer(lastUpdatedFile, args.min_interval_seconds);
                 lastUpdatedSerializer.loads(async () => {
-                    const urlEndPoint = "https://stockx.com/";
-
                     let count = 0;
 
                     try {
@@ -224,6 +254,32 @@ function parseProduct(product) {
                         console.log("finished updating " + count + " items");
                     }
                 });
+            });
+        } else if (args.mode == 'get') {
+            if (!args.style_id) {
+                throw new Error("args.style_id is required in get mode");
+            }
+            if (!args.start_from) {
+                throw new Error("args.start_form is required in get mode");
+            }
+
+            let staticInfoSerializer = new StaticInfoSerializer();
+            staticInfoSerializer.loadStaticInfoFromCsv(args.start_from, async (staticInfo) => {
+                if (staticInfo[args.style_id] !== undefined) {
+                    let staticItem = staticInfo[args.style_id];
+                    console.log(staticItem);
+
+                    await logIn('../../credentials/credentials.json');
+                    await stockX.fetchProductDetails(urlEndPoint + staticItem.urlKey)
+                        .then(p => {
+                            console.log(p);
+                        })
+                        .catch(err => {
+                            console.log(`Error scraping product details: ${err.message}`);
+                        });
+                } else {
+                    console.log(`cannot find product info for ${args.style_id} from ${args.start_from}`);
+                }
             });
         } else {
             throw new Error("unrecognized mode " + args.mode);
