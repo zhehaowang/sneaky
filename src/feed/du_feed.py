@@ -130,7 +130,7 @@ class DuFeed:
         return result
 
     def get_historical_transactions(
-        self, product_id, in_code, page=0, up_to_time=None, up_to_id=None
+        self, product_id, in_code, max_page=0, up_to_time=None, up_to_id=None
     ):
         def get_one_page(page, product_id, in_code):
             recentsales_list_url = self.builder.get_recentsales_list_url(
@@ -145,7 +145,7 @@ class DuFeed:
 
         all_sales = []
         page_idx = 0
-        while page >= 0:
+        while max_page >= 0:
             page_idx, sales = get_one_page(page_idx, product_id, in_code)
             if len(sales) == 0:
                 return all_sales
@@ -160,7 +160,7 @@ class DuFeed:
                 for sale in all_sales[::-1]:
                     if sale.id == up_to_id:
                         return all_sales
-            page -= 1
+            max_page -= 1
         return all_sales
 
 
@@ -207,6 +207,16 @@ def parse_args():
     parser.add_argument(
         "--limit",
         help="in update mode, the most number of entries this will attempt to update",
+    )
+    parser.add_argument(
+        "--transaction_history_date",
+        help="in update mode, the furthest back in time this tries to look for historical transactions\n"
+        "this performs an 'and' on all conditions",
+    )
+    parser.add_argument(
+        "--transaction_history_maxpage",
+        help="in update mode, the furthest back in pages this tries to look for historical transactions\n"
+        "this performs an 'and' on all conditions",
     )
     args = parser.parse_args()
     return args
@@ -266,8 +276,24 @@ def update_mode(args):
             )
             try:
                 size_prices, gender = feed.get_size_prices_from_product_id(product_id)
-                transactions = feed.get_historical_transactions(product_id, gender)
+
+                max_page = (
+                    int(args.transaction_history_maxpage)
+                    if args.transaction_history_maxpage
+                    else 0
+                )
+                up_to_time = (
+                    datetime.datetime.strptime(
+                        args.transaction_history_date, "%Y-%m-%d"
+                    )
+                    if args.transaction_history_date
+                    else None
+                )
+                transactions = feed.get_historical_transactions(
+                    product_id, gender, max_page=max_page, up_to_time=up_to_time
+                )
                 size_transactions = feed.split_size_transactions(transactions)
+                
                 update_time = last_updated_serializer.update_last_updated(
                     style_id, "du"
                 )

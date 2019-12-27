@@ -71,5 +71,7 @@ class LastUpdatedSerializer:
             for style_id in self.last_updated:
                 out_list = [style_id]
                 for venue in self.last_updated[style_id]:
-                    out_list.append(self.last_updated[style_id][venue].isoformat() + 'Z')
+                    out_list.append(
+                        self.last_updated[style_id][venue].isoformat() + "Z"
+                    )
                 wr.writerow(out_list)
