@@ -41,11 +41,7 @@ class DuFeed:
         def handle_search_error(search_response, e):
             # exception_name = type(e).__name__
             if search_response:
-                print(
-                    "search_page {} from {}".format(
-                        e, search_response.text
-                    )
-                )
+                print("search_page {} from {}".format(e, search_response.text))
             else:
                 print("search_page unexpected response {}".format(e))
 
