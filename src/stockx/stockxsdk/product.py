@@ -2,6 +2,7 @@ import json
 
 class StockxProduct(object):
     def __init__(self, product_json):
+        # print(json.dumps(product_json, indent=4))
         if not 'Product' in product_json:
             return
         product = product_json['Product']

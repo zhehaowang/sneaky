@@ -104,8 +104,19 @@ venv.bak/
 .mypy_cache/
 
 # credentials
-credentials.json
+credentials
 # scraped data
 data/*
 
+# 3ps
+node_modules
+
 .DS_Store
+.vscode
+logs
+src/data/*
+
+# unused code
+src/exit_finder/*
+src/ebay/*
+package-lock.json

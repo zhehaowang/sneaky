@@ -1,0 +1,11 @@
+{
+    "cutoff_net_profit_ratio_mid_to_listing_OUT": 0.01,
+    "cutoff_net_profit_ratio_mid_to_last": 0.25,
+    "cutoff_net_profit_ratio_ask_to_last": 0.01,
+    "cutoff_net_profit_ratio_bid_to_last": 0.01,
+    "cutoff_net_profit_value_mid_to_last": 25.0,
+    "cutoff_net_profit_value_ask_to_last": 20.0,
+    "cutoff_net_profit_value_bid_to_last": 30.0,
+    "sort": "profit_ratio_mid_to_last",
+    "cutoff_discrepancy_ratio_last_transaction": 0.10
+}
