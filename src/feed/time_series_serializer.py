@@ -16,16 +16,11 @@ class TimeSeriesSerializer:
     def _find_parent_path(self, style_id):
         return "{}/{}/".format(self.parent_folder, style_id)
 
-    def get_size_transactions(self, transactions):
-        result = {}
-        for t in transactions:
-            if t.size not in result:
-                result[t.size] = []
-            else:
-                result[t.size].append({"price": t.price, "time": t.time, "id": t.id})
-        return result
-
     def get(self, style_id, size=None):
+        """
+        get all size_prices for the specified style_id and optionally specified size
+        returns {(style_id, size) : {venue : {"prices": [...], "transactions": [...]}}}
+        """
         size_prices = {}
         if not size:
             parent_path = self._find_parent_path(style_id)
@@ -40,6 +35,18 @@ class TimeSeriesSerializer:
                 data = json.loads(infile.read())
                 size_prices[size] = data
         return size_prices
+
+    def get_all_historical_price(self, style_id, size, venue):
+        f = self._find_path(style_id, size)
+        with open(f, "r") as infile:
+            data = json.loads(infile.read())
+            return data[venue]["prices"]
+    
+    def get_all_transactions(self, style_id, size, venue):
+        f = self._find_path(style_id, size)
+        with open(f, "r") as infile:
+            data = json.loads(infile.read())
+            return data[venue]["transactions"]
 
     def update(self, venue, update_time, style_id, size_prices, size_transactions):
         for size in size_prices:
@@ -62,6 +69,7 @@ class TimeSeriesSerializer:
                     "time": update_time.strftime("%Y%m%d-%H%M%S"),
                     "bid_price": prices["bid_price"] if "bid_price" in prices else None,
                     "ask_price": prices["ask_price"] if "ask_price" in prices else None,
+                    "list_price": prices["list_price"] if "list_price" in prices else None,
                 },
             )
 

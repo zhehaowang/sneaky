@@ -114,11 +114,20 @@ class DuFeed:
 
     def get_details_from_product_id_raw(self, product_id):
         request_url = self.builder.get_product_detail_url(product_id)
-        return self._send_du_request(request_url)
+        return self._send_du_request(request_url).text
 
     def get_transactions_from_product_id_raw(self, product_id):
         recentsales_list_url = self.builder.get_recentsales_list_url(0, product_id)
-        return self._send_du_request(recentsales_list_url)
+        return self._send_du_request(recentsales_list_url).text
+
+    def split_size_transactions(self, transactions):
+        result = {}
+        for t in transactions:
+            if t.size not in result:
+                result[t.size] = []
+            else:
+                result[t.size].append({"price": t.price, "time": t.time, "id": t.id})
+        return result
 
     # TODO: paging
     def get_historical_transactions(self, product_id, in_code, page=0):
@@ -235,7 +244,7 @@ def update_mode(args):
             try:
                 size_prices, gender = feed.get_size_prices_from_product_id(product_id)
                 transactions = feed.get_historical_transactions(product_id, gender)
-                size_transactions = time_series_serializer.get_size_transactions(
+                size_transactions = feed.split_size_transactions(
                     transactions
                 )
                 update_time = last_updated_serializer.update_last_updated(
@@ -271,13 +280,13 @@ def get_mode(args):
         product_detail_response = feed.get_details_from_product_id_raw(
             static_item.product_id
         )
-        details_obj = json.loads(product_detail_response.text)
+        details_obj = json.loads(product_detail_response)
         pp.pprint(details_obj)
 
         recentsales_list_response = feed.get_transactions_from_product_id_raw(
             static_item.product_id
         )
-        transaction_obj = json.loads(recentsales_list_response.text)
+        transaction_obj = json.loads(recentsales_list_response)
         pp.pprint(transaction_obj)
     else:
         print(

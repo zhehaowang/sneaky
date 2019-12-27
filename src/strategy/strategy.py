@@ -123,7 +123,7 @@ class Strategy:
             if len(v["du"]["transactions"]) == 0:
                 return False
             for i in v["du"]["transactions"]:
-                transaction_time = last_stockx_time = datetime.datetime.strptime(
+                transaction_time = datetime.datetime.strptime(
                     i["time"], "%Y-%m-%dT%H:%M:%S.%f"
                 )
                 if (
