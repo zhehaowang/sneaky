@@ -5,6 +5,16 @@ import os
 import datetime
 import time
 
+"""
+Encapsulates reading and writing of last updated.
+Last updated keeps track of the last time we updated a model, feed loads this
+in to decide if we should get another reading in this run.
+
+@note saving to file is done in one go. Should a program updating multiple
+entries crash in the process, it probably should save the ones successfully
+updated on exit.
+"""
+
 
 class LastUpdatedSerializer:
     def __init__(self, last_updated_file, min_update_time=None):

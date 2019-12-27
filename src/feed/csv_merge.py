@@ -3,6 +3,10 @@
 import csv
 import argparse
 
+"""
+Given multiple csvfile sources, inner join them on style id and write the result
+"""
+
 
 def sanitize_style_id(style_id):
     return style_id.upper()

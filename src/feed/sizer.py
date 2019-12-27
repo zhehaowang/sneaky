@@ -1,11 +1,6 @@
-# agree
-# http://www.shoesizes.co/
-# https://www.quora.com/What-is-the-difference-between-Chinese-and-U-S-shoe-sizes
-#
-# disagree:
-# https://tbfocus.com/size-conversion-cn-uk-us-eu-fr-intls
-#
-# adopted: separate nike and adidas charts
+"""
+Chinese (EU) and US size conversions.
+"""
 
 
 class SizerError(Exception):
@@ -19,8 +14,10 @@ class SizerError(Exception):
 
 class Sizer:
     def __init__(self):
+        self.mapping = {}
+
         # adidas formatSize has fraction strings, example: CP9366
-        self.adidas_eu_us_men_size_mapping = {
+        self.mapping[("adidas-men", "eu", "us")] = {
             "36.0": "4.0",
             "36.5": "4.5",
             "37.0": "5.0",
@@ -43,11 +40,10 @@ class Sizer:
             "48.5": "13.5",
             "49.0": "14.0",
         }
-        self.adidas_us_eu_men_size_mapping = {}
 
         # nike US has "Y" to the end for women
         # du would claim 575441-028 is women mapping, but stockx listed this style_id as child
-        self.nike_eu_us_women_size_mapping = {
+        self.mapping[("nike-women", "eu", "us")] = {
             "35.5": "3.5Y",
             "36.0": "4.0Y",
             "36.5": "4.5Y",
@@ -57,14 +53,14 @@ class Sizer:
             "39.0": "6.5Y",
             "40.0": "7.0Y",
         }
-        self.nike_us_eu_women_size_mapping = {}
 
         # du has multiple size charts for nike-women, AH7389-003 is an example different from the above
-        self.nike_eu_us_women_size_mapping_2 = {}
+        # TODO: investigate this claim
+        self.mapping[("nike-women2", "eu", "us")] = {}
 
         # an example kid shoe on du: 36634 Title: 【BP幼童】Air Jordan 1 Low ALT 低帮 黑脚趾;
 
-        self.nike_eu_us_men_size_mapping = {
+        self.mapping[("nike-men", "eu", "us")] = {
             "35.5": "3.5",
             "36.0": "4.0",
             "36.5": "4.5",
@@ -92,10 +88,9 @@ class Sizer:
             # this is off the charts from du but people can buy this size. this is inferred. example 852542-301
             "49.0": "15.0",
         }
-        self.nike_us_eu_men_size_mapping = {}
 
         # I pretty much guessed these from the adidas website as du's CQ1843 doesn't have a chart
-        self.adidas_eu_us_women_size_mapping = {
+        self.mapping[("adidas-women", "eu", "us")] = {
             # not even adidas chart has these
             "35.0": "4.0",
             "35.5": "4.5",
@@ -111,79 +106,55 @@ class Sizer:
             "41.0": "9.0",
             "42.0": "9.5",
         }
-        self.adidas_us_eu_women_size_mapping = {}
-
-        if not self.adidas_us_eu_men_size_mapping:
-            for key in self.adidas_eu_us_men_size_mapping:
-                self.adidas_us_eu_men_size_mapping[
-                    self.adidas_eu_us_men_size_mapping[key]
-                ] = key
-        if not self.adidas_us_eu_women_size_mapping:
-            for key in self.adidas_eu_us_women_size_mapping:
-                self.adidas_us_eu_women_size_mapping[
-                    self.adidas_eu_us_women_size_mapping[key]
-                ] = key
-        if not self.nike_us_eu_men_size_mapping:
-            for key in self.nike_eu_us_men_size_mapping:
-                self.nike_us_eu_men_size_mapping[
-                    self.nike_eu_us_men_size_mapping[key]
-                ] = key
-        if not self.nike_us_eu_women_size_mapping:
-            for key in self.nike_eu_us_women_size_mapping:
-                self.nike_us_eu_women_size_mapping[
-                    self.nike_eu_us_women_size_mapping[key]
-                ] = key
-
+        self.populate_reverse_mapping()
         return
 
+    def populate_reverse_mapping(self):
+        for key in self.mapping:
+            gender, in_metric, out_metric = key
+            reverse_key = (gender, out_metric, in_metric)
+            self.mapping[reverse_key] = {}
+            for size in self.mapping[key]:
+                self.mapping[reverse_key][self.mapping[key][size]] = size
+        return
+
+    def _in_out_code_to_key(self, in_code, out_code):
+        in_metric, in_venue, in_gender = in_code.split("-")
+        key = (in_venue + "-" + in_gender, in_metric, out_code)
+        return key, in_metric
+
     def get_shoe_size(self, in_size, in_code, out_code):
-        try:
-            if in_code == out_code:
-                return in_size
-            elif in_code == "eu-adidas-men":
-                if out_code == "us":
-                    return self.adidas_eu_us_men_size_mapping[in_size]
-            elif in_code == "eu-adidas-women":
-                if out_code == "us":
-                    return self.adidas_eu_us_women_size_mapping[in_size]
-            elif in_code == "eu-nike-women":
-                if out_code == "us":
-                    return self.nike_eu_us_women_size_mapping[in_size]
-            elif in_code == "eu-nike-men":
-                if out_code == "us":
-                    return self.nike_eu_us_men_size_mapping[in_size]
-            elif in_code == "us":
-                if out_code == "eu-adidas-men":
-                    return self.adidas_us_eu_men_size_mapping[in_size]
-                elif out_code == "eu-adidas-women":
-                    return self.adidas_us_eu_women_size_mapping[in_size]
-                elif out_code == "eu-nike-men":
-                    return self.nike_us_eu_men_size_mapping[in_size]
-                elif out_code == "eu-nike-women":
-                    return self.nike_us_eu_women_size_mapping[in_size]
-        except KeyError as e:
+        map_key, in_metric = self._in_out_code_to_key(in_code, out_code)
+        if in_metric == out_code:
+            return in_size
+        if map_key not in self.mapping:
+            raise SizerError("no mapping exists", in_code, out_code, in_size)
+        if in_size not in self.mapping[map_key]:
             print(
                 "failed to get shoe_size {} to {} size {}".format(
                     in_code, out_code, in_size
                 )
             )
             raise SizerError("failed to get shoe_size", in_code, out_code, in_size)
-        return None
+        else:
+            return self.mapping[map_key][in_size]
 
     def infer_gender(self, size_list_float):
         # sorted by number of entries
         candidates = [
-            (self.nike_eu_us_women_size_mapping, "eu-nike-women"),
-            (self.adidas_eu_us_women_size_mapping, "eu-adidas-women"),
-            (self.adidas_eu_us_men_size_mapping, "eu-adidas-men"),
-            (self.nike_eu_us_men_size_mapping, "eu-nike-men"),
+            "eu-nike-women",
+            "eu-adidas-women",
+            "eu-adidas-men",
+            "eu-nike-men",
         ]
 
         inferred = []
         for c in candidates:
-            size_list_candidate = set([float(k) for k in c[0]])
+            size_list_candidate = set(
+                [float(k) for k in self.mapping[self._in_out_code_to_key(c, "us")]]
+            )
             if size_list_float.issubset(size_list_candidate):
-                inferred.append(c[1])
+                inferred.append(c)
         if len(inferred) > 1:
             # raise SizerError('failed to infer gender', inferred, len(inferred), size_list_float)
             print(
