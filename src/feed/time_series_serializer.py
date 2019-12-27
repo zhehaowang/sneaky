@@ -3,8 +3,6 @@ import os
 import glob
 import pathlib
 
-from du_response_parser import SaleRecord
-
 
 class TimeSeriesSerializer:
     def __init__(self, parent_folder=None):
