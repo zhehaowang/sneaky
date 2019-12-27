@@ -36,14 +36,21 @@ class LastUpdatedSerializer:
 
                 for i in range(len(self.columns)):
                     if i + 1 < len(row):
-                        self.last_updated[style_id][
-                            self.columns[i]
-                        ] = datetime.datetime.strptime(row[i + 1], "%Y%m%d-%H%M%S")
+                        try:
+                            self.last_updated[style_id][
+                                self.columns[i]
+                            ] = datetime.datetime.strptime(
+                                row[i + 1], "%Y-%m-%dT%H:%M:%S.%fZ"
+                            )
+                        except ValueError:
+                            self.last_updated[style_id][
+                                self.columns[i]
+                            ] = datetime.datetime.strptime(row[i + 1], "%Y%m%d-%H%M%S")
 
     def update_last_updated(self, style_id, venue):
         if style_id not in self.last_updated:
             self.last_updated[style_id] = {}
-        self.last_updated[style_id][venue] = datetime.datetime.now()
+        self.last_updated[style_id][venue] = datetime.datetime.utcnow()
         return self.last_updated[style_id][venue]
 
     def should_update(self, style_id, venue):
@@ -51,7 +58,7 @@ class LastUpdatedSerializer:
             return True
         else:
             if style_id in self.last_updated and venue in self.last_updated[style_id]:
-                now = datetime.datetime.now()
+                now = datetime.datetime.utcnow()
                 last_update = time.time()
                 last_update = self.last_updated[style_id][venue]
                 return (now - last_update).total_seconds() > self.min_update_time
@@ -64,7 +71,5 @@ class LastUpdatedSerializer:
             for style_id in self.last_updated:
                 out_list = [style_id]
                 for venue in self.last_updated[style_id]:
-                    out_list.append(
-                        self.last_updated[style_id][venue].strftime("%Y%m%d-%H%M%S")
-                    )
+                    out_list.append(self.last_updated[style_id][venue].isoformat() + 'Z')
                 wr.writerow(out_list)

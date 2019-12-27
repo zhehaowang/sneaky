@@ -14,7 +14,7 @@ class StaticInfoSerializer:
 
     def dump_static_info_to_csv(self, items, filename=None):
         static_items = self.extract_item_static_info(items)
-        date_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        date_time = datetime.datetime.utcnow().isoformat() + 'Z'
         if not filename:
             static_mapping_file = "du.mapping.{}.csv".format(date_time)
         else:

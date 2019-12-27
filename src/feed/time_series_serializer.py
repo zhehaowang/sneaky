@@ -66,7 +66,7 @@ class TimeSeriesSerializer:
             data[venue]["prices"].insert(
                 0,
                 {
-                    "time": update_time.strftime("%Y%m%d-%H%M%S"),
+                    "time": update_time.isoformat() + "Z",
                     "bid_price": prices["bid_price"] if "bid_price" in prices else None,
                     "ask_price": prices["ask_price"] if "ask_price" in prices else None,
                     "list_price": prices["list_price"]

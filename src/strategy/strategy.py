@@ -92,18 +92,23 @@ class Strategy:
             # 3 days
             if len(v["du"]["prices"]) == 0 or len(v["stockx"]["prices"]) == 0:
                 return False
-            last_du_time = datetime.datetime.strptime(
-                v["du"]["prices"][0]["time"], "%Y%m%d-%H%M%S"
-            )
+            try:
+                last_du_time = datetime.datetime.strptime(
+                    v["du"]["prices"][0]["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            except ValueError:
+                last_du_time = datetime.datetime.strptime(
+                    v["du"]["prices"][0]["time"], "%Y%m%d-%H%M%S"
+                )
             last_stockx_time = datetime.datetime.strptime(
                 v["stockx"]["prices"][0]["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
             )
             if (
-                datetime.datetime.now() - last_du_time
+                datetime.datetime.utcnow() - last_du_time
             ).total_seconds() > data_lifetime_seconds:
                 return False
             if (
-                datetime.datetime.now() - last_stockx_time
+                datetime.datetime.utcnow() - last_stockx_time
             ).total_seconds() > data_lifetime_seconds:
                 return False
             return True
@@ -123,11 +128,16 @@ class Strategy:
             if len(v["du"]["transactions"]) == 0:
                 return False
             for i in v["du"]["transactions"]:
-                transaction_time = datetime.datetime.strptime(
-                    i["time"], "%Y-%m-%dT%H:%M:%S.%f"
-                )
+                try:
+                    transaction_time = datetime.datetime.strptime(
+                        i["time"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
+                except ValueError:
+                    transaction_time = datetime.datetime.strptime(
+                        i["time"], "%Y-%m-%dT%H:%M:%S.%f"
+                    )
                 if (
-                    datetime.datetime.now() - transaction_time
+                    datetime.datetime.utcnow() - transaction_time
                 ).total_seconds() < data_lifetime_seconds:
                     return True
             return False

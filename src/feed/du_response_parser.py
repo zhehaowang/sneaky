@@ -16,37 +16,38 @@ def timestr_to_epoch(timestr, timenow=None):
     @param timenow  datetime (optional) if specified use specified time as
         opposed to actual time now
     @return str iso8601 time string corresponding to the time of the input
+    @note when inferring time, this uses utcnow
     """
-    time_now = timenow if timenow else datetime.datetime.now()
+    time_now = timenow if timenow else datetime.datetime.utcnow()
 
     if timestr == "刚刚":
-        return time_now.isoformat()
+        return time_now.isoformat() + 'Z'
 
     match = re.match(r"([0-9]+)分钟前", timestr)
     if match:
         minutes = int(match.group(1))
-        return (time_now - datetime.timedelta(minutes=minutes)).isoformat()
+        return (time_now - datetime.timedelta(minutes=minutes)).isoformat() + 'Z'
 
     match = re.match(r"([0-9]+)小时前", timestr)
     if match:
         hours = int(match.group(1))
-        return (time_now - datetime.timedelta(hours=hours)).isoformat()
+        return (time_now - datetime.timedelta(hours=hours)).isoformat() + 'Z'
 
     match = re.match(r"([0-9]+)天前", timestr)
     if match:
         days = int(match.group(1))
-        return (time_now - datetime.timedelta(days=days)).isoformat()
+        return (time_now - datetime.timedelta(days=days)).isoformat() + 'Z'
 
     match = re.match(r"([0-9]+)月前", timestr)
     if match:
         months = int(match.group(1))
-        return (time_now - datetime.timedelta(days=months * 30)).isoformat()
+        return (time_now - datetime.timedelta(days=months * 30)).isoformat() + 'Z'
 
     match = re.match(r"([0-9]+)月([0-9]+)日", timestr)
     if match:
         month = int(match.group(1))
         day = int(match.group(2))
-        return time_now.replace(day=day, month=month).isoformat()
+        return time_now.replace(day=day, month=month).isoformat() + 'Z'
 
     raise RuntimeError("failed to parse timestr {}".format(timestr))
 
