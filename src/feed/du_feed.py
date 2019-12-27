@@ -60,7 +60,7 @@ class DuFeed:
                             )
                         )
                         continue
-                    self.populate_item_details(j, j.product_id)
+                    self._populate_item_details(j, j.product_id)
                     result_items[j.product_id] = j
             except json.decoder.JSONDecodeError as e:
                 handle_search_error(search_response, e)
@@ -76,7 +76,7 @@ class DuFeed:
                 )
         return result_items
 
-    def populate_item_details(self, in_item, product_id):
+    def _populate_item_details(self, in_item, product_id):
         request_url = self.builder.get_product_detail_url(product_id)
         product_detail_response = self._send_du_request(request_url)
         print("querying details for {} {}".format(product_id, in_item))
@@ -98,10 +98,10 @@ class DuFeed:
             # ^this is arguably better?
             request_url = self.builder.get_product_detail_url(product_id)
             product_detail_response = self._send_du_request(request_url)
-            _, size_prices, _, _ = self.parser.parse_product_detail_response(
+            _, size_prices, _, gender = self.parser.parse_product_detail_response(
                 product_detail_response.text, self.sizer
             )
-            return size_prices
+            return size_prices, gender
         except RuntimeError as e:
             print("get_detail runtime error {}".format(e))
             return None
@@ -117,7 +117,7 @@ class DuFeed:
         return self._send_du_request(request_url)
 
     def get_transactions_from_product_id_raw(self, product_id):
-        recentsales_list_url = feed.builder.get_recentsales_list_url(0, product_id)
+        recentsales_list_url = self.builder.get_recentsales_list_url(0, product_id)
         return self._send_du_request(recentsales_list_url)
 
     # TODO: paging
@@ -132,7 +132,7 @@ class DuFeed:
         return sales
 
 
-if __name__ == "__main__":
+def parse_args():
     parser = argparse.ArgumentParser(
         """
         entry point for du feed.
@@ -177,113 +177,134 @@ if __name__ == "__main__":
         help="in update mode, the most number of entries this will attempt to update",
     )
     args = parser.parse_args()
+    return args
+
+
+def query_mode(args):
+    feed = DuFeed()
+    serializer = StaticInfoSerializer()
+
+    keywords = []
+    if os.path.isfile(args.kw):
+        with open(args.kw, "r") as infile:
+            keywords = infile.read().split("\n")
+    else:
+        keywords = args.kw.split(",")
+    if args.start_from:
+        result_items, _ = serializer.load_static_info_from_csv(
+            args.start_from, return_key="du_product_id"
+        )
+    else:
+        result_items = {}
+
+    for keyword in keywords:
+        result_items = feed.search_pages(
+            keyword.strip(), pages=int(args.pages), result_items=result_items
+        )
+    serializer.dump_static_info_to_csv(result_items)
+
+
+def update_mode(args):
+    feed = DuFeed()
+    serializer = StaticInfoSerializer()
+
+    last_updated_file = "last_updated.log"
+    if args.last_updated:
+        last_updated_file = args.last_updated
+
+    last_updated_serializer = LastUpdatedSerializer(
+        last_updated_file, args.min_interval_seconds
+    )
+    time_series_serializer = TimeSeriesSerializer()
+
+    static_info, _ = serializer.load_static_info_from_csv(
+        args.start_from, return_key="du_product_id"
+    )
+    count = 0
+    for product_id in static_info:
+        style_id = static_info[product_id].style_id
+        if last_updated_serializer.should_update(style_id, "du"):
+            count += 1
+            if args.limit and count > int(args.limit):
+                break
+            print(
+                "working with {} style_id {} brand {}".format(
+                    product_id, style_id, static_info[product_id].title
+                )
+            )
+            try:
+                size_prices, gender = feed.get_size_prices_from_product_id(product_id)
+                transactions = feed.get_historical_transactions(product_id, gender)
+                size_transactions = time_series_serializer.get_size_transactions(
+                    transactions
+                )
+                update_time = last_updated_serializer.update_last_updated(
+                    style_id, "du"
+                )
+                time_series_serializer.update(
+                    "du", update_time, style_id, size_prices, size_transactions
+                )
+            except KeyError as e:
+                print("get_tick failed {}".format(e))
+            except RuntimeError as e:
+                print("get_tick failed {}".format(e))
+            except json.decoder.JSONDecodeError as e:
+                print("get_tick failed {}".format(e))
+            except SizerError as e:
+                print(e.msg, e.in_code, e.out_code, e.in_size)
+            last_updated_serializer.save_last_updated()
+        else:
+            print("should skip {}".format(product_id))
+
+
+def get_mode(args):
     feed = DuFeed()
     serializer = StaticInfoSerializer()
     pp = pprint.PrettyPrinter()
+
+    static_info, _ = serializer.load_static_info_from_csv(
+        args.start_from, return_key="style_id"
+    )
+    if args.style_id in static_info:
+        static_item = static_info[args.style_id]
+        print(static_item)
+        product_detail_response = feed.get_details_from_product_id_raw(
+            static_item.product_id
+        )
+        details_obj = json.loads(product_detail_response.text)
+        pp.pprint(details_obj)
+
+        recentsales_list_response = feed.get_transactions_from_product_id_raw(
+            static_item.product_id
+        )
+        transaction_obj = json.loads(recentsales_list_response.text)
+        pp.pprint(transaction_obj)
+    else:
+        print(
+            "cannot find product info for {} from {}".format(
+                args.style_id, args.start_from
+            )
+        )
+
+
+if __name__ == "__main__":
+    args = parse_args()
 
     if args.mode == "query":
         if not args.kw:
             raise RuntimeError("args.kw is mandatory in query mode")
         if not args.pages:
             raise RuntimeError("args.pages is mandatory in query mode")
-
-        keywords = []
-        if os.path.isfile(args.kw):
-            with open(args.kw, "r") as infile:
-                keywords = infile.read().split("\n")
-        else:
-            keywords = args.kw.split(",")
-        if args.start_from:
-            result_items, _ = serializer.load_static_info_from_csv(
-                args.start_from, return_key="du_product_id"
-            )
-        else:
-            result_items = {}
-
-        for keyword in keywords:
-            result_items = feed.search_pages(
-                keyword.strip(), pages=int(args.pages), result_items=result_items
-            )
-        serializer.dump_static_info_to_csv(result_items)
+        query_mode(args)
     elif args.mode == "update":
         if not args.start_from:
             raise RuntimeError("args.start_from is mandatory in update mode")
-
-        last_updated_file = "last_updated.log"
-        if args.last_updated:
-            last_updated_file = args.last_updated
-
-        last_updated_serializer = LastUpdatedSerializer(
-            last_updated_file, args.min_interval_seconds
-        )
-        time_series_serializer = TimeSeriesSerializer()
-
-        static_info, static_info_extra = serializer.load_static_info_from_csv(
-            args.start_from, return_key="du_product_id"
-        )
-        count = 0
-        for product_id in static_info:
-            style_id = static_info[product_id].style_id
-            if last_updated_serializer.should_update(style_id, "du"):
-                count += 1
-                if args.limit and count > int(args.limit):
-                    break
-                print(
-                    "working with {} style_id {} brand {}".format(
-                        product_id, style_id, static_info[product_id].title
-                    )
-                )
-                try:
-                    gender = static_info[product_id].gender
-                    size_prices = feed.get_size_prices_from_product_id(product_id)
-                    transactions = feed.get_historical_transactions(product_id, gender)
-                    size_transactions = time_series_serializer.get_size_transactions(
-                        transactions
-                    )
-                    update_time = last_updated_serializer.update_last_updated(
-                        style_id, "du"
-                    )
-                    time_series_serializer.update(
-                        "du", update_time, style_id, size_prices, size_transactions
-                    )
-                except KeyError as e:
-                    print("get_tick failed {}".format(e))
-                except RuntimeError as e:
-                    print("get_tick failed {}".format(e))
-                except json.decoder.JSONDecodeError as e:
-                    print("get_tick failed {}".format(e))
-                except SizerError as e:
-                    print(e.msg, e.in_code, e.out_code, e.in_size)
-                last_updated_serializer.save_last_updated()
-            else:
-                print("should skip {}".format(product_id))
+        update_mode(args)
     elif args.mode == "get":
         if not args.start_from:
             raise RuntimeError("args.start_from is required in get mode")
         if not args.style_id:
             raise RuntimeError("args.style_id is required in get mode")
-        static_info, _ = serializer.load_static_info_from_csv(
-            args.start_from, return_key="style_id"
-        )
-        if args.style_id in static_info:
-            static_item = static_info[args.style_id]
-            print(static_item)
-            product_detail_response = feed.get_details_from_product_id_raw(
-                static_item.product_id
-            )
-            details_obj = json.loads(product_detail_response.text)
-            pp.pprint(details_obj)
-
-            recentsales_list_response = feed.get_transactions_from_product_id_raw(
-                static_item.product_id
-            )
-            transaction_obj = json.loads(recentsales_list_response.text)
-            pp.pprint(transaction_obj)
-        else:
-            print(
-                "cannot find product info for {} from {}".format(
-                    args.style_id, args.start_from
-                )
-            )
+        get_mode(args)
     else:
         raise RuntimeError("Unsupported mode {}".format(args.mode))
