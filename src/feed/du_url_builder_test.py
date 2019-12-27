@@ -16,7 +16,9 @@ class TestConnectivityAndParse(unittest.TestCase):
 
     def test_recent_sales(self):
         recentsales_list_url = self.request_builder.get_recentsales_list_url(0, 40755)
-        recentsales_list_response = requests.get(url=recentsales_list_url, headers=DuRequestBuilder.du_headers)
+        recentsales_list_response = requests.get(
+            url=recentsales_list_url, headers=DuRequestBuilder.du_headers
+        )
         try:
             status = json.loads(recentsales_list_response.text)["status"]
         except KeyError as e:
@@ -25,14 +27,20 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
-        last_id, sales = self.parser.parse_recent_sales(recentsales_list_response.text, "eu-adidas-men")
+        last_id, sales = self.parser.parse_recent_sales(
+            recentsales_list_response.text, "eu-adidas-men"
+        )
         print("retrieved last_id {} and {} records.".format(last_id, len(sales)))
         if len(sales) > 0:
             print("example record {}".format(sales[0]))
 
     def test_search_by_keywords(self):
-        search_by_keywords_url = self.request_builder.get_search_by_keywords_url("aj", 0, 1, 0)
-        search_by_keywords_response = requests.get(url=search_by_keywords_url, headers=DuRequestBuilder.du_headers)
+        search_by_keywords_url = self.request_builder.get_search_by_keywords_url(
+            "aj", 0, 1, 0
+        )
+        search_by_keywords_response = requests.get(
+            url=search_by_keywords_url, headers=DuRequestBuilder.du_headers
+        )
         try:
             status = json.loads(search_by_keywords_response.text)["status"]
         except KeyError as e:
@@ -41,13 +49,17 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
-        search_results = self.parser.parse_search_results(search_by_keywords_response.text)
+        search_results = self.parser.parse_search_results(
+            search_by_keywords_response.text
+        )
         self.assertTrue(len(search_results) > 0)
         print("example search result item {}".format(search_results[0]))
 
     def test_brandlist(self):
         brand_list_url = self.request_builder.get_brand_list_url(1, 4)
-        brand_list_response = requests.get(url=brand_list_url, headers=DuRequestBuilder.du_headers)
+        brand_list_response = requests.get(
+            url=brand_list_url, headers=DuRequestBuilder.du_headers
+        )
         try:
             status = json.loads(brand_list_response.text)["status"]
         except KeyError as e:
@@ -57,8 +69,10 @@ class TestConnectivityAndParse(unittest.TestCase):
         self.assertEqual(status, 200)
 
     def test_product_details(self):
-        product_detail_url =  self.request_builder.get_product_detail_url(53489)
-        product_detail_response = requests.get(url=product_detail_url, headers=DuRequestBuilder.du_headers)
+        product_detail_url = self.request_builder.get_product_detail_url(53489)
+        product_detail_response = requests.get(
+            url=product_detail_url, headers=DuRequestBuilder.du_headers
+        )
         try:
             status = json.loads(product_detail_response.text)["status"]
         except KeyError as e:
@@ -67,10 +81,17 @@ class TestConnectivityAndParse(unittest.TestCase):
             self.assertFalse(str(e))
         self.assertEqual(status, 200)
 
-        style_id, size_list, release_date = self.parser.parse_product_detail_response(product_detail_response.text)
+        style_id, size_list, release_date = self.parser.parse_product_detail_response(
+            product_detail_response.text
+        )
         self.assertTrue(len(style_id) > 0)
         self.assertTrue(len(size_list) > 0)
-        print("example product detail {} {}".format(style_id, next(iter(size_list.values()))))
+        print(
+            "example product detail {} {}".format(
+                style_id, next(iter(size_list.values()))
+            )
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

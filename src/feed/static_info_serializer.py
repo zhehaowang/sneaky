@@ -3,7 +3,8 @@ import csv
 
 from du_response_parser import DuItem
 
-class StaticInfoSerializer():
+
+class StaticInfoSerializer:
     def __init__(self):
         return
 
@@ -20,9 +21,19 @@ class StaticInfoSerializer():
             static_mapping_file = filename
         with open(static_mapping_file, "w") as outfile:
             wr = csv.writer(outfile)
-            wr.writerow(["style_id", "du_product_id", "du_title", "release_date", "gender"])
+            wr.writerow(
+                ["style_id", "du_product_id", "du_title", "release_date", "gender"]
+            )
             for row in static_items:
-                wr.writerow([row["style_id"], row["product_id"], row["title"], row["release_date"], row["gender"]])
+                wr.writerow(
+                    [
+                        row["style_id"],
+                        row["product_id"],
+                        row["title"],
+                        row["release_date"],
+                        row["gender"],
+                    ]
+                )
         print("dumped {} entries to {}".format(len(static_items), static_mapping_file))
 
     # TODO: DuItem should be decoupled from StaticItem, for now this is implemented as extras
@@ -46,8 +57,12 @@ class StaticInfoSerializer():
                 if "stockx_url_key" in row:
                     extras[row[return_key]]["stockx_url_key"] = row["stockx_url_key"]
                 if "stockx_retail_price" in row:
-                    extras[row[return_key]]["stockx_retail_price"] = row["stockx_retail_price"]
+                    extras[row[return_key]]["stockx_retail_price"] = row[
+                        "stockx_retail_price"
+                    ]
                 if "stockx_release_date" in row:
-                    extras[row[return_key]]["stockx_release_date"] = row["stockx_release_date"]
+                    extras[row[return_key]]["stockx_release_date"] = row[
+                        "stockx_release_date"
+                    ]
 
         return result, extras

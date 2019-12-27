@@ -5,15 +5,18 @@ import os
 import datetime
 import time
 
-class LastUpdatedSerializer():
+
+class LastUpdatedSerializer:
     def __init__(self, last_updated_file, min_update_time=None):
         self.dst_file_path = last_updated_file
         self.last_updated = {}
         self.columns = ["du", "stockx", "flightclub"]
-        self.min_update_time = float(min_update_time) if min_update_time is not None else 0
+        self.min_update_time = (
+            float(min_update_time) if min_update_time is not None else 0
+        )
         if os.path.isfile(last_updated_file):
             self.load_last_updated()
-    
+
     def load_last_updated(self):
         with open(self.dst_file_path) as infile:
             rr = csv.reader(infile)
@@ -23,9 +26,10 @@ class LastUpdatedSerializer():
 
                 for i in range(len(self.columns)):
                     if i + 1 < len(row):
-                        self.last_updated[style_id][self.columns[i]] = datetime.datetime.strptime(
-                            row[i + 1], "%Y%m%d-%H%M%S")
-    
+                        self.last_updated[style_id][
+                            self.columns[i]
+                        ] = datetime.datetime.strptime(row[i + 1], "%Y%m%d-%H%M%S")
+
     def update_last_updated(self, style_id, venue):
         if style_id not in self.last_updated:
             self.last_updated[style_id] = {}
@@ -50,7 +54,7 @@ class LastUpdatedSerializer():
             for style_id in self.last_updated:
                 out_list = [style_id]
                 for venue in self.last_updated[style_id]:
-                    out_list.append(self.last_updated[style_id][venue].strftime("%Y%m%d-%H%M%S"))
+                    out_list.append(
+                        self.last_updated[style_id][venue].strftime("%Y%m%d-%H%M%S")
+                    )
                 wr.writerow(out_list)
-
-

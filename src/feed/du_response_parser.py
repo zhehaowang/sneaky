@@ -7,6 +7,7 @@ import hashlib
 
 from sizer import Sizer
 
+
 def timestr_to_epoch(timestr, timenow=None):
     """
     helper function to convert last_transaction time format to epoch
@@ -18,38 +19,39 @@ def timestr_to_epoch(timestr, timenow=None):
     """
     time_now = timenow if timenow else datetime.datetime.now()
 
-    if timestr == '刚刚':
+    if timestr == "刚刚":
         return time_now.isoformat()
-    
-    match = re.match(r'([0-9]+)分钟前', timestr)
+
+    match = re.match(r"([0-9]+)分钟前", timestr)
     if match:
         minutes = int(match.group(1))
         return (time_now - datetime.timedelta(minutes=minutes)).isoformat()
-    
-    match = re.match(r'([0-9]+)小时前', timestr)
+
+    match = re.match(r"([0-9]+)小时前", timestr)
     if match:
         hours = int(match.group(1))
         return (time_now - datetime.timedelta(hours=hours)).isoformat()
-    
-    match = re.match(r'([0-9]+)天前', timestr)
+
+    match = re.match(r"([0-9]+)天前", timestr)
     if match:
         days = int(match.group(1))
         return (time_now - datetime.timedelta(days=days)).isoformat()
-    
-    match = re.match(r'([0-9]+)月前', timestr)
+
+    match = re.match(r"([0-9]+)月前", timestr)
     if match:
         months = int(match.group(1))
         return (time_now - datetime.timedelta(days=months * 30)).isoformat()
 
-    match = re.match(r'([0-9]+)月([0-9]+)日', timestr)
+    match = re.match(r"([0-9]+)月([0-9]+)日", timestr)
     if match:
         month = int(match.group(1))
         day = int(match.group(2))
         return time_now.replace(day=day, month=month).isoformat()
-    
-    raise RuntimeError('failed to parse timestr {}'.format(timestr))
 
-class SaleRecord():
+    raise RuntimeError("failed to parse timestr {}".format(timestr))
+
+
+class SaleRecord:
     def __init__(self, size, price, time, id=None):
         self.size = size
         self.price = price
@@ -59,7 +61,8 @@ class SaleRecord():
     def __str__(self):
         return str(self.size) + " " + str(self.price) + " " + self.time
 
-class DuItem():
+
+class DuItem:
     def __init__(self, product_id, title, sold_num):
         self.product_id = DuParser.sanitize_style_id(product_id)
         self.title = str(title)
@@ -81,24 +84,26 @@ class DuItem():
             "product_id": self.product_id,
             "title": self.title,
             "release_date": self.release_date,
-            "gender": self.gender
+            "gender": self.gender,
         }
 
     def __str__(self):
         if self.style_id:
             return "Style ID: {}; Title: {}; Du Sold Num: {}".format(
-                self.style_id, self.title, self.sold_num)
+                self.style_id, self.title, self.sold_num
+            )
         else:
             return "Title: {}; Du Sold Num: {}".format(self.title, self.sold_num)
 
-class DuParser():
+
+class DuParser:
     def __init__(self, sizer):
         self.sizer = sizer
         return
-    
+
     @staticmethod
-    def sanitize_size(sizer, size_str, in_code, out_code='us'):
-        sanitized_size_str = size_str.strip().strip('码').upper()
+    def sanitize_size(sizer, size_str, in_code, out_code="us"):
+        sanitized_size_str = size_str.strip().strip("码").upper()
         if re.match("^[0-9]+$", sanitized_size_str):
             # size like 36 becomes 36.0
             sanitized_size_str += ".0"
@@ -127,9 +132,9 @@ class DuParser():
     @staticmethod
     def get_sale_id(sales_list_obj):
         m = hashlib.md5()
-        m.update(str(sales_list_obj['price']).encode('utf-8'))
-        m.update(str(sales_list_obj['sizeDesc']).encode('utf-8'))
-        m.update(str(sales_list_obj['userName']).encode('utf-8'))
+        m.update(str(sales_list_obj["price"]).encode("utf-8"))
+        m.update(str(sales_list_obj["sizeDesc"]).encode("utf-8"))
+        m.update(str(sales_list_obj["userName"]).encode("utf-8"))
         return m.hexdigest()
 
     @staticmethod
@@ -139,23 +144,29 @@ class DuParser():
     def parse_recent_sales(self, in_text, in_code):
         o = json.loads(in_text)
         if o["status"] != 200:
-            raise RuntimeError("parse_recent_sales aborted response status {}".format(o["status"]))
+            raise RuntimeError(
+                "parse_recent_sales aborted response status {}".format(o["status"])
+            )
         data = o["data"]
         sales_list = data["list"]
         result = []
         for s in sales_list:
             result.append(
                 SaleRecord(
-                    self.sanitize_size(self.sizer, s['sizeDesc'], in_code),
-                    self.sanitize_price(s['price']),
-                    self.sanitize_time(s['formatTime']),
-                    id=self.get_sale_id(s)))
+                    self.sanitize_size(self.sizer, s["sizeDesc"], in_code),
+                    self.sanitize_price(s["price"]),
+                    self.sanitize_time(s["formatTime"]),
+                    id=self.get_sale_id(s),
+                )
+            )
         return data["lastId"], result
 
     def parse_search_results(self, in_text):
         o = json.loads(in_text)
         if o["status"] != 200:
-            raise RuntimeError("parse_search_results aborted response status {}".format(o["status"]))
+            raise RuntimeError(
+                "parse_search_results aborted response status {}".format(o["status"])
+            )
         data = o["data"]
         product_list = data["productList"]
         result = []
@@ -174,19 +185,25 @@ class DuParser():
             result[size] = {
                 # bid_price is price of one (best?) bid. 0 if no bids
                 "bid_price": bid_price,
-                "list_price": list_price
+                "list_price": list_price,
             }
         return result, gender
 
     def parse_product_detail_response(self, in_text, sizer):
         o = json.loads(in_text)
         if o["status"] != 200:
-            raise RuntimeError("parse_product_detail_response aborted response status {}".format(o["status"]))
+            raise RuntimeError(
+                "parse_product_detail_response aborted response status {}".format(
+                    o["status"]
+                )
+            )
         data = o["data"]
         detail = data["detail"]
         style_id = detail["articleNumber"]
         print("style id: {}".format(style_id))
         release_date = detail["sellDate"]
-        size_list_float = set([float(s.strip().strip('码')) for s in detail["sizeList"]])
-        size_prices, gender = self.parse_size_prices(data["sizeList"], sizer, size_list_float)
+        size_list_float = set([float(s.strip().strip("码")) for s in detail["sizeList"]])
+        size_prices, gender = self.parse_size_prices(
+            data["sizeList"], sizer, size_list_float
+        )
         return style_id, size_prices, release_date, gender
