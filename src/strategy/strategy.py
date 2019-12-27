@@ -153,8 +153,6 @@ class Strategy():
             "identifier": k
         } for k in size_prices_profit_cutoff]
 
-        # TODO: we should consider making another query to stockx for high, low, volatility, etc for the recommended item 
-        # as those shouldn't be static but would be useful in decision making.
         result_array.sort(key=lambda x : x["data"]["annotation"][options["sort"]], reverse=True)
         print("total results {}".format(len(result_array)))
         return result_array

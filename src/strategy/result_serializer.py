@@ -48,6 +48,10 @@ class ResultSerializer():
                   "  du transaction time:  {}\n"
                   "  stockx bid:           {:.2f} USD\n"
                   "  stockx ask:           {:.2f} USD\n"
+                  "  stockx annual high:   {:.2f} USD\n"
+                  "  stockx annual low:    {:.2f} USD\n"
+                  "  stockx volatility:    {:.2f}\n"
+                  "  stockx sale last 72h: {}\n"
                   "{}".format(
                 data["du"]["prices"][0]["bid_price"] / 100,
                 data["annotation"]["du_price_usd"],
@@ -56,4 +60,8 @@ class ResultSerializer():
                 data["du"]["transactions"][0]["time"],
                 data["stockx"]["prices"][0]["bid_price"],
                 data["stockx"]["prices"][0]["ask_price"],
+                data["stockx"]["prices"][0]["annual_high"],
+                data["stockx"]["prices"][0]["annual_low"],
+                data["stockx"]["prices"][0]["volatility"],
+                data["stockx"]["prices"][0]["sale_72_hours"],
                 self.get_annotation_str(data["annotation"])))
