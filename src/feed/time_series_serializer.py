@@ -41,7 +41,7 @@ class TimeSeriesSerializer:
         with open(f, "r") as infile:
             data = json.loads(infile.read())
             return data[venue]["prices"]
-    
+
     def get_all_transactions(self, style_id, size, venue):
         f = self._find_path(style_id, size)
         with open(f, "r") as infile:
@@ -69,7 +69,9 @@ class TimeSeriesSerializer:
                     "time": update_time.strftime("%Y%m%d-%H%M%S"),
                     "bid_price": prices["bid_price"] if "bid_price" in prices else None,
                     "ask_price": prices["ask_price"] if "ask_price" in prices else None,
-                    "list_price": prices["list_price"] if "list_price" in prices else None,
+                    "list_price": prices["list_price"]
+                    if "list_price" in prices
+                    else None,
                 },
             )
 

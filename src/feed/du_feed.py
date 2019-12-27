@@ -129,16 +129,39 @@ class DuFeed:
                 result[t.size].append({"price": t.price, "time": t.time, "id": t.id})
         return result
 
-    # TODO: paging
-    def get_historical_transactions(self, product_id, in_code, page=0):
-        recentsales_list_url = self.builder.get_recentsales_list_url(page, product_id)
-        recentsales_list_response = requests.get(
-            url=recentsales_list_url, headers=DuRequestBuilder.du_headers
-        )
-        last_id, sales = self.parser.parse_recent_sales(
-            recentsales_list_response.text, in_code
-        )
-        return sales
+    def get_historical_transactions(
+        self, product_id, in_code, page=0, up_to_time=None, up_to_id=None
+    ):
+        def get_one_page(page, product_id, in_code):
+            recentsales_list_url = self.builder.get_recentsales_list_url(
+                page, product_id
+            )
+            recentsales_list_response = requests.get(
+                url=recentsales_list_url, headers=DuRequestBuilder.du_headers
+            )
+            return self.parser.parse_recent_sales(
+                recentsales_list_response.text, in_code
+            )
+
+        all_sales = []
+        page_idx = 0
+        while page >= 0:
+            page_idx, sales = get_one_page(page_idx, product_id, in_code)
+            if len(sales) == 0:
+                return all_sales
+            all_sales += sales
+            if (
+                up_to_time
+                and datetime.datetime.strptime(sales[-1].time, "%Y-%m-%dT%H:%M:%S.%fZ")
+                < up_to_time
+            ):
+                return all_sales
+            if up_to_id:
+                for sale in all_sales[::-1]:
+                    if sale.id == up_to_id:
+                        return all_sales
+            page -= 1
+        return all_sales
 
 
 def parse_args():
@@ -244,9 +267,7 @@ def update_mode(args):
             try:
                 size_prices, gender = feed.get_size_prices_from_product_id(product_id)
                 transactions = feed.get_historical_transactions(product_id, gender)
-                size_transactions = feed.split_size_transactions(
-                    transactions
-                )
+                size_transactions = feed.split_size_transactions(transactions)
                 update_time = last_updated_serializer.update_last_updated(
                     style_id, "du"
                 )
