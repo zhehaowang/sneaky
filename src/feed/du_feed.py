@@ -15,7 +15,7 @@ from du_response_parser import DuParser, SaleRecord, DuItem
 from last_updated import LastUpdatedSerializer
 from time_series_serializer import TimeSeriesSerializer
 from static_info_serializer import StaticInfoSerializer
-from sizer import Sizer
+from sizer import Sizer, SizerError
 
 def send_du_request(url):
     if __debug__:
@@ -68,24 +68,28 @@ class DuFeed():
                         e, search_response.text))
                 else:
                     print("search_page key error {}".format(e))
+            except SizerError as e:
+                print("search_page sizer error {} {} {}".format(e.in_code, e.in_size, e.out_code))
         return result_items
     
     def populate_item_details(self, in_item, product_id):
         request_url = self.builder.get_product_detail_url(product_id)
         product_detail_response = send_du_request(request_url)
         print("querying details for {} {}".format(product_id, in_item))
-        style_id, size_list, release_date = self.parser.parse_product_detail_response(
-            product_detail_response.text)
-        print("style id: {}".format(style_id))
-        in_item.populate_details(style_id, size_list, release_date)
+        style_id, size_prices, release_date, gender = self.parser.parse_product_detail_response(
+            product_detail_response.text, self.sizer)
+        print("inferred gender: {}".format(gender))
+        in_item.populate_details(style_id, size_prices, release_date, gender)
         return
 
     def get_prices_from_product_id(self, product_id):
         try:
+            # TODO: we don't actually use loaded static_Info's gender in update, do we?
+            # ^this is arguably better?
             request_url = self.builder.get_product_detail_url(product_id)
             product_detail_response = send_du_request(request_url)
-            _, size_list, _ = self.parser.parse_product_detail_response(
-                product_detail_response.text)
+            _, size_list, _, _ = self.parser.parse_product_detail_response(
+                product_detail_response.text, self.sizer)
             return size_list
         except RuntimeError as e:
             print("get_detail runtime error {}".format(e))
@@ -146,6 +150,10 @@ if __name__ == "__main__":
         "--style_id",
         help="in get mode, get product detail for this style_id. No effect in other modes"
     )
+    parser.add_argument(
+        "--limit",
+        help="in update mode, the most number of entries this will attempt to update"
+    )
     args = parser.parse_args()
     feed = DuFeed()
     serializer = StaticInfoSerializer()
@@ -182,10 +190,14 @@ if __name__ == "__main__":
         last_updated_serializer = LastUpdatedSerializer(last_updated_file, args.min_interval_seconds)
         time_series_serializer = TimeSeriesSerializer()
 
-        static_info, _ = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
+        static_info, static_info_extra = serializer.load_static_info_from_csv(args.start_from, return_key="du_product_id")
+        count = 0
         for product_id in static_info:
             style_id = static_info[product_id].style_id
             if last_updated_serializer.should_update(style_id, "du"):
+                count += 1
+                if args.limit and count > int(args.limit):
+                    break
                 print('working with {} style_id {} brand {}'.format(product_id, style_id, static_info[product_id].title))
                 try:
                     gender = static_info[product_id].gender
@@ -201,6 +213,8 @@ if __name__ == "__main__":
                     print("get_tick failed {}".format(e))
                 except json.decoder.JSONDecodeError as e:
                     print("get_tick failed {}".format(e))
+                except SizerError as e:
+                    print(e.msg, e.in_code, e.out_code, e.in_size)
                 last_updated_serializer.save_last_updated()
             else:
                 print("should skip {}".format(product_id))
@@ -217,6 +231,11 @@ if __name__ == "__main__":
             product_detail_response = send_du_request(request_url)
             response_obj = json.loads(product_detail_response.text)
             pp.pprint(response_obj)
+
+            recentsales_list_url = feed.builder.get_recentsales_list_url(0, static_item.product_id)
+            recentsales_list_response = send_du_request(recentsales_list_url)
+            transaction_obj = json.loads(recentsales_list_response.text)
+            pp.pprint(transaction_obj)
         else:
             print("cannot find product info for {} from {}".format(args.style_id, args.start_from))
     else:

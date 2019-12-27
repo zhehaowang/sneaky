@@ -7,8 +7,17 @@
 # 
 # adopted: separate nike and adidas charts
 
+class SizerError(Exception): 
+    def __init__(self, message, in_code, out_code, in_size):
+        super().__init__(message)
+        self.in_code = in_code
+        self.out_code = out_code
+        self.in_size = in_size
+        self.msg = message
+
 class Sizer():
     def __init__(self):
+        # adidas formatSize has fraction strings, example: CP9366
         self.adidas_eu_us_men_size_mapping = {
             "36.0":  "4.0",
             "36.5":  "4.5",
@@ -77,12 +86,28 @@ class Sizer():
             "47.0":  "12.5",
             "47.5":  "13.0",
             "48.0":  "13.5",
-            "48.5":  "14.0"
+            "48.5":  "14.0",
+            # this is off the charts from du but people can buy this size. this is inferred. example 852542-301
+            "49.0":  "15.0",
         }
         self.nike_us_eu_men_size_mapping = {}
 
+        # I pretty much guessed these from the adidas website as du's CQ1843 doesn't have a chart
         self.adidas_eu_us_women_size_mapping = {
-
+            # not even adidas chart has these
+            "35.0": "4.0",
+            "35.5": "4.5",
+            # adidas site has these
+            "36.0": "5.0",
+            "36.5": "5.5",
+            "37.0": "6.0",
+            "38.0": "6.5",
+            "38.5": "7.0",
+            "39.0": "7.5",
+            "40.0": "8.0",
+            "40.5": "8.5",
+            "41.0": "9.0",
+            "42.0": "9.5"
         }
         self.adidas_us_eu_women_size_mapping = {}
 
@@ -108,9 +133,9 @@ class Sizer():
             elif in_code == 'eu-adidas-men':
                 if out_code == 'us':
                     return self.adidas_eu_us_men_size_mapping[in_size]
-            # elif in_code == 'eu-adidas-women':
-            #     if out_code == 'us':
-            #         return adidas_eu_us_women_size_mapping[in_size]
+            elif in_code == 'eu-adidas-women':
+                if out_code == 'us':
+                    return self.adidas_eu_us_women_size_mapping[in_size]
             elif in_code == 'eu-nike-women':
                 if out_code == 'us':
                     return self.nike_eu_us_women_size_mapping[in_size]
@@ -120,10 +145,34 @@ class Sizer():
             elif in_code == 'us':
                 if out_code == 'eu-adidas-men':
                     return self.adidas_us_eu_men_size_mapping[in_size]
+                elif out_code == 'eu-adidas-women':
+                    return self.adidas_us_eu_women_size_mapping[in_size]
                 elif out_code == 'eu-nike-men':
                     return self.nike_us_eu_men_size_mapping[in_size]
                 elif out_code == 'eu-nike-women':
                     return self.nike_us_eu_women_size_mapping[in_size]
         except KeyError as e:
             print('failed to get shoe_size {} to {} size {}'.format(in_code, out_code, in_size))
+            raise SizerError('failed to get shoe_size', in_code, out_code, in_size)
         return None
+
+    def infer_gender(self, size_list_float):
+        # sorted by number of entries
+        candidates = [
+            (self.nike_eu_us_women_size_mapping, "eu-nike-women"),
+            (self.adidas_eu_us_women_size_mapping, "eu-adidas-women"),
+            (self.adidas_eu_us_men_size_mapping, "eu-adidas-men"),
+            (self.nike_eu_us_men_size_mapping, "eu-nike-men")
+        ]
+        
+        inferred = []
+        for c in candidates:
+            size_list_candidate = set([float(k) for k in c[0]])
+            if size_list_float.issubset(size_list_candidate):
+                inferred.append(c[1])
+        if len(inferred) > 1:
+            # raise SizerError('failed to infer gender', inferred, len(inferred), size_list_float)
+            print("multiple matches: {} for {}. Going to assume the most restrictive: {}".format(inferred, size_list_float, inferred[0]))
+        if len(inferred) == 0:
+            raise SizerError('no match to infer gender', inferred, len(inferred), size_list_float)
+        return inferred[0]

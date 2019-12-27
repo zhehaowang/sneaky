@@ -110,11 +110,11 @@ function sanitizeSize(sizeStr) {
     if (sanitizedSizeStr.match(/^[0-9]+$/g)) {
         // size like 36 becomes 36.0
         sanitizedSizeStr += ".0";
-    } else if (sanitizedSizeStr.match(/^[0-9]+Y$/g)) {
-        // size like 5Y becomes 5.0Y
-        sanitizedSizeStr = sanitizedSizeStr.slice(0, -1) + ".0Y"
-    } else if (sanitizedSizeStr.match(/^[0-9]+\.[05]Y?$/g)) {
-        // size like 36.5 or 5.0Y is fine
+    } else if (sanitizedSizeStr.match(/^[0-9]+([WY])$/g)) {
+        // size like 5Y becomes 5.0Y, 5W becomes 5.0W
+        sanitizedSizeStr = sanitizedSizeStr.slice(0, -1) + ".0" + sanitizedSizeStr.slice(-1);
+    } else if (sanitizedSizeStr.match(/^[0-9]+\.[05][WY]?$/g)) {
+        // size like 36.5, 5.0Y or 3.5W is fine
     } else {
         throw new Error(`unable to parse size ${sanitizedSizeStr}`);
     }

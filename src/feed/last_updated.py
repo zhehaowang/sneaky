@@ -10,7 +10,7 @@ class LastUpdatedSerializer():
         self.dst_file_path = last_updated_file
         self.last_updated = {}
         self.columns = ["du", "stockx", "flightclub"]
-        self.min_update_time = float(min_update_time)
+        self.min_update_time = float(min_update_time) if min_update_time is not None else 0
         if os.path.isfile(last_updated_file):
             self.load_last_updated()
     

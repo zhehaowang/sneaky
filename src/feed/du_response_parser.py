@@ -67,29 +67,12 @@ class DuItem():
         self.style_id = None
         self.size_prices = {}
         self.gender = None
-    
-    @staticmethod
-    def infer_gender(title):
-        # TODO: smarter women handling
-        lt = title.lower()
-        if "nike" in lt or "jordan" in lt or "airforce" in lt:
-            if "女" in lt:
-                return "eu-nike-women"
-            else:
-                return "eu-nike-men"
-        elif "adidas" in lt or "yeezy" in lt:
-            if "女" in lt:
-                return "eu-adidas-women"
-            else:
-                return "eu-adidas-men"
-        else:
-            raise RuntimeError("failed to infer gender from {}".format(title))
 
-    def populate_details(self, style_id, size_prices, release_date):
+    def populate_details(self, style_id, size_prices, release_date, gender):
         self.style_id = str(style_id)
         self.size_prices = size_prices
         self.release_date = str(release_date)
-        self.gender = self.infer_gender(self.title)
+        self.gender = gender
         return
 
     def get_static_info(self):
@@ -149,6 +132,10 @@ class DuParser():
         m.update(str(sales_list_obj['userName']).encode('utf-8'))
         return m.hexdigest()
 
+    @staticmethod
+    def infer_gender(sizer, size_list):
+        return sizer.infer_gender(size_list)
+
     def parse_recent_sales(self, in_text, in_code):
         o = json.loads(in_text)
         if o["status"] != 200:
@@ -176,25 +163,30 @@ class DuParser():
             result.append(DuItem(p["productId"], p["title"], p["soldNum"]))
         return result
 
-    def parse_size_list(self, size_list, in_code):
+    def parse_size_prices(self, size_prices, sizer, size_list_float):
         result = {}
-        for s in size_list:
+        gender = self.infer_gender(sizer, size_list_float)
+        for s in size_prices:
             bid = s["buyerBiddingItem"]
             bid_price = self.sanitize_price(bid["price"])
-            size = self.sanitize_size(self.sizer, s["formatSize"], in_code)
+            list_price = self.sanitize_price(s["showItem"]["price"])
+            size = self.sanitize_size(self.sizer, str(s["size"]), gender)
             result[size] = {
-                "bid_price": bid_price
+                # bid_price is price of one (best?) bid. 0 if no bids
+                "bid_price": bid_price,
+                "list_price": list_price
             }
-        return result
+        return result, gender
 
-    def parse_product_detail_response(self, in_text):
+    def parse_product_detail_response(self, in_text, sizer):
         o = json.loads(in_text)
         if o["status"] != 200:
             raise RuntimeError("parse_product_detail_response aborted response status {}".format(o["status"]))
         data = o["data"]
         detail = data["detail"]
         style_id = detail["articleNumber"]
+        print("style id: {}".format(style_id))
         release_date = detail["sellDate"]
-        gender = DuItem.infer_gender(detail["title"])
-        size_list = self.parse_size_list(data["sizeList"], gender)
-        return style_id, size_list, release_date
+        size_list_float = set([float(s.strip().strip('码')) for s in detail["sizeList"]])
+        size_prices, gender = self.parse_size_prices(data["sizeList"], sizer, size_list_float)
+        return style_id, size_prices, release_date, gender
