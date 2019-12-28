@@ -16,11 +16,7 @@ from last_updated import LastUpdatedSerializer
 from time_series_serializer import TimeSeriesSerializer
 from static_info_serializer import StaticInfoSerializer
 from sizer import Sizer, SizerError
-
-# for timeseries plot; these probably should belong to a different analysis binary?
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import numpy as np
+from du_analyzer import ItemAnalyzer
 
 class DuFeed:
     def __init__(self):
@@ -392,46 +388,14 @@ def get_mode(args):
             reversed_t = transactions[::-1]
             for t in reversed_t:
                 t.size = t.size.strip().strip('Y')
-
-            x = np.array([datetime.datetime.strptime(t.time, "%Y-%m-%dT%H:%M:%S.%fZ") for t in reversed_t if float(t.size) == float(args.plot_size)])
-            y = np.array([(t.price / 100) for t in reversed_t if float(t.size) == float(args.plot_size)])
-
-            if len(x) > 0:
-                months = mdates.MonthLocator()  # every month
-                year_month_fmt = mdates.DateFormatter('%Y%m')
-
-                fig, ax = plt.subplots()
-
-                ax.plot(x, y)
-                # format the ticks
-                ax.xaxis.set_major_locator(months)
-                ax.xaxis.set_major_formatter(year_month_fmt)
-
-                # round to nearest months.
-                datemin = np.datetime64(x[0], 'm')
-                datemax = np.datetime64(x[-1], 'm') + np.timedelta64(1, 'm')
-                ax.set_xlim(datemin, datemax)
-
-                # format the coords message box
-                ax.format_xdata = mdates.DateFormatter('%Y-%m-%d')
-                ax.format_ydata = lambda x: '$%1.2f' % x  # format the price.
-                ax.grid(True)
-
-                # rotates and right aligns the x labels, and moves the bottom of the
-                # axes up to make room for them
-                fig.autofmt_xdate()
-                if args.style_id:
-                    fig_filename = "{}.{}.png".format(args.style_id, args.plot_size)
-                elif args.product_id:
-                    fig_filename = "{}.{}.png".format(args.product_id, args.plot_size)
-                fig.suptitle(fig_filename)
-                plt.savefig(fig_filename)
-                print("historical transaction figure saved to {}".format(fig_filename))
-
-                plt.show()            
-            else:
-                print("no historical transactions found for {} {}".format(args.style_id, args.plot_size))
+            filtered_t = [t for in reversed_t if float(t.size) == float(args.plot_size)]
             
+            if args.style_id:
+                fig_filename = "{}.{}.png".format(args.style_id, args.plot_size)
+            elif args.product_id:
+                fig_filename = "{}.{}.png".format(args.product_id, args.plot_size)
+            analyzer = ItemAnalyzer()
+            analyzer.plot_historical_transactions(filtered_t, plot_title=fig_filename, save_png=fig_filename)
 
 if __name__ == "__main__":
     args = parse_args()

@@ -18,8 +18,10 @@ class TimeSeriesSerializer:
 
     def get(self, style_id, size=None):
         """
-        get all size_prices for the specified style_id and optionally specified size
+        Get all size_prices for the specified style_id and optionally specified size
         returns {(style_id, size) : {venue : {"prices": [...], "transactions": [...]}}}
+
+        Throws FileNotFoundError if no serialized data can be found
         """
         size_prices = {}
         if not size:
