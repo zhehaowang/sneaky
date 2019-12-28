@@ -11,15 +11,15 @@ Sneaky系统从多个平台 (毒app，StockX) 抓取球鞋价格数据、存储�
 * Feed
   * Scrapes venues for current price listing and historical transactions.
   * Three main modes of operation:
-    * Query: given search terms, scrape models on a venue, record static information (e.g. style ID, title, release date, product ID / URL query key on the venue, __feed/static_info_serializer.py__).
+    * **Query**: given search terms, scrape models on a venue, record static information (e.g. style ID, title, release date, product ID / URL query key on the venue, __feed/static_info_serializer.py__).
     * Update: given static info produced by query, dump current price readings and transactions since the last update to local file system (__feed/time_series_serializer.py__).
-    * Study: given style ID and size, query a venue for current listing prices and historical transactions data.
+    * **Study**: given style ID and size, query a venue for current listing prices and historical transactions data.
   * Venues:
-    * Du (__feed/du_feed.py__, fully implemented): scrapes Du WeChat app for product detail and transaction history.
-    * StockX (__feed/stockx_feed.js__, fully implemented): scrapes StockX (web service) for current best bid and offer.
-    * Flightclub (__flightclub/__, on v1): scrapy-based crawler to parse sell prices from FlightClub webpage.
-    * Goat (not implemented).
-    * Ebay (not pursued, low match rate and lack of authenticity guarantee would greatly hurt automation).
+    * **Du** (__feed/du_feed.py__, fully implemented): scrapes Du WeChat app for product detail and transaction history.
+    * **StockX** (__feed/stockx_feed.js__, fully implemented): scrapes StockX (web service) for current best bid and offer.
+    * **Flightclub** (__flightclub/__, on v1): scrapy-based crawler to parse sell prices from FlightClub webpage.
+    * **Goat** (not implemented).
+    * **Ebay** (not pursued, low match rate and lack of authenticity guarantee would greatly hurt automation).
 * Strategy
   * Given time series data feed produced and a configurable set of options, print the most lucrative models for purchase (__strategy/strategy.py__).
 * Analytics
@@ -35,7 +35,7 @@ Sneaky系统从多个平台 (毒app，StockX) 抓取球鞋价格数据、存储�
 ### How to run
 
 * Dependencies
-* Credentials
+* Create credentials
 * Feed
 ```sh
 # Du product details => du.mapping.{now}.csv
@@ -107,7 +107,7 @@ Release date:           2017-06-10 23:59:59
 
 Analytics produce stats and historical transaction prices plot.
 
-![Historical transaction prices](src/feed/BQ6623-800.9.5.png)
+![Historical transaction prices](docs/BQ6623-800.9.5.png)
 
 ### Lessons, progress, and TODO
 
