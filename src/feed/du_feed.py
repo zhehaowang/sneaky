@@ -173,16 +173,18 @@ def parse_args():
           ./du_feed.py --mode update --start_from du.mapping.20191206-211125.csv --min_interval_seconds 3600
           ./du_feed.py --mode query --kw aj --pages 2 --start_from du.mapping.20191206-145908.csv
           ./du_feed.py --mode query --kw aj --pages 30
-          ./du_feed.py --mode get --style_id 575441-028 --start_from du.mapping.20191221-150959.csv
+          ./du_feed.py --mode getraw --style_id 575441-028 --start_from merged.20191225.csv
+          ./du_feed.py --mode gets --style_id 575441-028 --start_from merged.20191225.csv --transaction_history_date 20191101 --transaction_history_maxpage 5
     """
     )
     parser.add_argument(
         "--mode",
         help=(
-            "[query|update|get]"
+            "[query|update|getraw|gets]"
             "query builds the static mapping file,"
             "update takes a mapping and updates entries,"
-            "get retrieves product detail for a style id"
+            "getraw retrieves product detail and transactions (raw) for a style id,"
+            "gets retrieves structured size prices and transactions for a style id, mimicing what would be written in update mode"
         ),
     )
     parser.add_argument("--kw", help="in query mode, the query keyword")
@@ -202,7 +204,7 @@ def parse_args():
     )
     parser.add_argument(
         "--style_id",
-        help="in get mode, get product detail for this style_id. No effect in other modes",
+        help="in get modes, get product detail for this style_id. No effect in other modes",
     )
     parser.add_argument(
         "--limit",
@@ -324,17 +326,40 @@ def get_mode(args):
     if args.style_id in static_info:
         static_item = static_info[args.style_id]
         print(static_item)
-        product_detail_response = feed.get_details_from_product_id_raw(
-            static_item.product_id
-        )
-        details_obj = json.loads(product_detail_response)
-        pp.pprint(details_obj)
 
-        recentsales_list_response = feed.get_transactions_from_product_id_raw(
-            static_item.product_id
-        )
-        transaction_obj = json.loads(recentsales_list_response)
-        pp.pprint(transaction_obj)
+        if args.mode == "getraw":
+            product_detail_response = feed.get_details_from_product_id_raw(
+                static_item.product_id
+            )
+            details_obj = json.loads(product_detail_response)
+            pp.pprint(details_obj)
+
+            recentsales_list_response = feed.get_transactions_from_product_id_raw(
+                static_item.product_id
+            )
+            transaction_obj = json.loads(recentsales_list_response)
+            pp.pprint(transaction_obj)
+        elif args.mode == "gets":
+            size_prices, gender = feed.get_size_prices_from_product_id(static_item.product_id)
+            print(size_prices)
+            print(gender)
+            max_page = (
+                int(args.transaction_history_maxpage)
+                if args.transaction_history_maxpage
+                else 0
+            )
+            up_to_time = (
+                datetime.datetime.strptime(
+                    args.transaction_history_date, "%Y%m%d"
+                )
+                if args.transaction_history_date
+                else None
+            )
+            transactions = feed.get_historical_transactions(
+                static_item.product_id, gender, max_page=max_page, up_to_time=up_to_time
+            )
+            for t in transactions:
+                print(t)
     else:
         print(
             "cannot find product info for {} from {}".format(
@@ -356,11 +381,11 @@ if __name__ == "__main__":
         if not args.start_from:
             raise RuntimeError("args.start_from is mandatory in update mode")
         update_mode(args)
-    elif args.mode == "get":
+    elif args.mode == "getraw" or args.mode == "gets":
         if not args.start_from:
-            raise RuntimeError("args.start_from is required in get mode")
+            raise RuntimeError("args.start_from is required in get modes")
         if not args.style_id:
-            raise RuntimeError("args.style_id is required in get mode")
+            raise RuntimeError("args.style_id is required in get modes")
         get_mode(args)
     else:
         raise RuntimeError("Unsupported mode {}".format(args.mode))
