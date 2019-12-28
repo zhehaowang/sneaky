@@ -5,7 +5,7 @@ import sys
 # hack for import
 sys.path.append("../feed/")
 
-from sizer import Sizer
+from sizer import Sizer, SizerError
 
 
 class ResultSerializer:
@@ -38,45 +38,51 @@ class ResultSerializer:
             item_extras = static_info_extras[style_id]
             data = i["data"]
             data["annotation"]["du_price_usd"] = self.fx_rate.get_spot_fx(
-                data["du"]["prices"][0]["bid_price"] / 100, "CNY", "USD"
+                data["du"]["prices"][0]["list_price"] / 100, "CNY", "USD"
             )
             data["annotation"]["du_last_transaction_usd"] = self.fx_rate.get_spot_fx(
                 data["du"]["transactions"][0]["price"] / 100, "CNY", "USD"
             )
 
-            chinese_size = self.sizer.get_shoe_size(size, "us", item.gender)
-            print(
-                "{} {} {}\n{} , {}\n{}".format(
-                    style_id,
-                    size,
-                    chinese_size,
-                    item_extras["stockx_url_key"],
-                    item.title,
-                    item_extras["stockx_release_date"],
+            # TODO: until merged has the right sizing, this reverse translation may
+            # not be accurate
+            try:
+                chinese_size = self.sizer.get_shoe_size(size, item.gender.replace("eu", "us"), "eu")
+                print(
+                    "{} {} {}\n{} , {}\n{}".format(
+                        style_id,
+                        size,
+                        chinese_size,
+                        item_extras["stockx_url_key"],
+                        item.title,
+                        item_extras["stockx_release_date"],
+                    )
                 )
-            )
-            print(
-                "  du listing price:     {:.2f} CNY {:.2f} USD\n"
-                "  du transaction price: {:.2f} CNY {:.2f} USD\n"
-                "  du transaction time:  {}\n"
-                "  stockx bid:           {:.2f} USD\n"
-                "  stockx ask:           {:.2f} USD\n"
-                "  stockx annual high:   {:.2f} USD\n"
-                "  stockx annual low:    {:.2f} USD\n"
-                "  stockx volatility:    {:.2f}\n"
-                "  stockx sale last 72h: {}\n"
-                "{}".format(
-                    data["du"]["prices"][0]["bid_price"] / 100,
-                    data["annotation"]["du_price_usd"],
-                    data["du"]["transactions"][0]["price"] / 100,
-                    data["annotation"]["du_last_transaction_usd"],
-                    data["du"]["transactions"][0]["time"],
-                    data["stockx"]["prices"][0]["bid_price"],
-                    data["stockx"]["prices"][0]["ask_price"],
-                    data["stockx"]["prices"][0]["annual_high"],
-                    data["stockx"]["prices"][0]["annual_low"],
-                    data["stockx"]["prices"][0]["volatility"],
-                    data["stockx"]["prices"][0]["sale_72_hours"],
-                    self.get_annotation_str(data["annotation"]),
+                print(
+                    "  du listing price:     {:.2f} CNY {:.2f} USD\n"
+                    "  du transaction price: {:.2f} CNY {:.2f} USD\n"
+                    "  du transaction time:  {}\n"
+                    "  stockx bid:           {:.2f} USD\n"
+                    "  stockx ask:           {:.2f} USD\n"
+                    "  stockx annual high:   {:.2f} USD\n"
+                    "  stockx annual low:    {:.2f} USD\n"
+                    "  stockx volatility:    {:.2f}\n"
+                    "  stockx sale last 72h: {}\n"
+                    "{}".format(
+                        data["du"]["prices"][0]["list_price"] / 100,
+                        data["annotation"]["du_price_usd"],
+                        data["du"]["transactions"][0]["price"] / 100,
+                        data["annotation"]["du_last_transaction_usd"],
+                        data["du"]["transactions"][0]["time"],
+                        data["stockx"]["prices"][0]["bid_price"],
+                        data["stockx"]["prices"][0]["ask_price"],
+                        data["stockx"]["prices"][0]["annual_high"],
+                        data["stockx"]["prices"][0]["annual_low"],
+                        data["stockx"]["prices"][0]["volatility"],
+                        data["stockx"]["prices"][0]["sale_72_hours"],
+                        self.get_annotation_str(data["annotation"]),
+                    )
                 )
-            )
+            except SizerError:
+                print("sizer failed to translate {} {}. continuing".format(style_id, size))
+                continue

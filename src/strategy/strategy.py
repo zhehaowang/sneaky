@@ -69,12 +69,12 @@ class Strategy:
             if not ("du" in v and "stockx" in v):
                 return False
             if (
-                not "bid_price" in v["du"]["prices"][0]
+                not "list_price" in v["du"]["prices"][0]
                 or not "ask_price" in v["stockx"]["prices"][0]
             ):
                 return False
             if (
-                not v["du"]["prices"][0]["bid_price"]
+                not v["du"]["prices"][0]["list_price"]
                 or not v["stockx"]["prices"][0]["ask_price"]
             ):
                 return False
@@ -169,7 +169,7 @@ class Strategy:
             else:
                 raise RuntimeError("unrecognized ratio filter option {}".format(source))
             if dest == "listing":
-                du_bid = v["du"]["prices"][0]["bid_price"] / 100
+                du_bid = v["du"]["prices"][0]["list_price"] / 100
             elif dest == "last":
                 du_bid = v["du"]["transactions"][0]["price"] / 100
             else:
