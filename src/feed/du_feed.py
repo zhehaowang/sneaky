@@ -17,6 +17,10 @@ from time_series_serializer import TimeSeriesSerializer
 from static_info_serializer import StaticInfoSerializer
 from sizer import Sizer, SizerError
 
+# for timeseries plot; these probably should belong to a different analysis binary?
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import numpy as np
 
 class DuFeed:
     def __init__(self):
@@ -170,11 +174,11 @@ def parse_args():
         entry point for du feed.
 
         example usage:
-          ./du_feed.py --mode update --start_from du.mapping.20191206-211125.csv --min_interval_seconds 3600
+          ./du_feed.py --mode update --start_from du.mapping.20191206-211125.csv --min_interval_seconds 3600 --transaction_history_date 20190801 --transaction_history_maxpage 20
           ./du_feed.py --mode query --kw aj --pages 2 --start_from du.mapping.20191206-145908.csv
           ./du_feed.py --mode query --kw aj --pages 30
           ./du_feed.py --mode getraw --style_id 575441-028 --start_from merged.20191225.csv
-          ./du_feed.py --mode gets --style_id 575441-028 --start_from merged.20191225.csv --transaction_history_date 20191101 --transaction_history_maxpage 5
+          ./du_feed.py --mode gets --style_id BQ6623-800 --start_from du.historical.csv --transaction_history_date 20190801 --transaction_history_maxpage 20 --plot_size 9.5
     """
     )
     parser.add_argument(
@@ -207,6 +211,10 @@ def parse_args():
         help="in get modes, get product detail for this style_id. No effect in other modes",
     )
     parser.add_argument(
+        "--product_id",
+        help="in get modes, get product detail for this product_id. No effect in other modes",
+    )
+    parser.add_argument(
         "--limit",
         help="in update mode, the most number of entries this will attempt to update",
     )
@@ -219,6 +227,10 @@ def parse_args():
         "--transaction_history_maxpage",
         help="in update mode, the furthest back in pages this tries to look for historical transactions\n"
         "this performs an 'and' on all conditions",
+    )
+    parser.add_argument(
+        "--plot_size",
+        help="in gets mode, plot the historical prices of the given size"
     )
     args = parser.parse_args()
     return args
@@ -265,54 +277,59 @@ def update_mode(args):
         args.start_from, return_key="du_product_id"
     )
     count = 0
-    for product_id in static_info:
-        style_id = static_info[product_id].style_id
-        if last_updated_serializer.should_update(style_id, "du"):
-            count += 1
-            if args.limit and count > int(args.limit):
-                break
-            print(
-                "working with {} style_id {} brand {}".format(
-                    product_id, style_id, static_info[product_id].title
-                )
-            )
-            try:
-                size_prices, gender = feed.get_size_prices_from_product_id(product_id)
-
-                max_page = (
-                    int(args.transaction_history_maxpage)
-                    if args.transaction_history_maxpage
-                    else 0
-                )
-                up_to_time = (
-                    datetime.datetime.strptime(
-                        args.transaction_history_date, "%Y%m%d"
+    try:
+        for product_id in static_info:
+            style_id = static_info[product_id].style_id
+            if last_updated_serializer.should_update(style_id, "du"):
+                count += 1
+                if args.limit and count > int(args.limit):
+                    break
+                print(
+                    "working with {} style_id {} brand {}".format(
+                        product_id, style_id, static_info[product_id].title
                     )
-                    if args.transaction_history_date
-                    else None
                 )
-                transactions = feed.get_historical_transactions(
-                    product_id, gender, max_page=max_page, up_to_time=up_to_time
-                )
-                size_transactions = feed.split_size_transactions(transactions)
-                
-                update_time = last_updated_serializer.update_last_updated(
-                    style_id, "du"
-                )
-                time_series_serializer.update(
-                    "du", update_time, style_id, size_prices, size_transactions
-                )
-            except KeyError as e:
-                print("get_tick failed {}".format(e))
-            except RuntimeError as e:
-                print("get_tick failed {}".format(e))
-            except json.decoder.JSONDecodeError as e:
-                print("get_tick failed {}".format(e))
-            except SizerError as e:
-                print(e.msg, e.in_code, e.out_code, e.in_size)
-            last_updated_serializer.save_last_updated()
-        else:
-            print("should skip {}".format(product_id))
+                try:
+                    size_prices, gender = feed.get_size_prices_from_product_id(product_id)
+
+                    max_page = (
+                        int(args.transaction_history_maxpage)
+                        if args.transaction_history_maxpage
+                        else 0
+                    )
+                    up_to_time = (
+                        datetime.datetime.strptime(
+                            args.transaction_history_date, "%Y%m%d"
+                        )
+                        if args.transaction_history_date
+                        else None
+                    )
+                    transactions = feed.get_historical_transactions(
+                        product_id, gender, max_page=max_page, up_to_time=up_to_time
+                    )
+                    size_transactions = feed.split_size_transactions(transactions)
+                    
+                    update_time = last_updated_serializer.update_last_updated(
+                        style_id, "du"
+                    )
+                    time_series_serializer.update(
+                        "du", update_time, style_id, size_prices, size_transactions
+                    )
+                except KeyError as e:
+                    print("get_tick failed {}".format(e))
+                except RuntimeError as e:
+                    print("get_tick failed {}".format(e))
+                except json.decoder.JSONDecodeError as e:
+                    print("get_tick failed {}".format(e))
+                except SizerError as e:
+                    print(e.msg, e.in_code, e.out_code, e.in_size)
+                last_updated_serializer.save_last_updated()
+            else:
+                print("should skip {}".format(product_id))
+    except KeyboardInterrupt:
+        last_updated_serializer.save_last_updated()
+        print("Caught KeyboardInterrupt. Saving last_updated and exiting")
+        exit(1)
 
 
 def get_mode(args):
@@ -320,53 +337,101 @@ def get_mode(args):
     serializer = StaticInfoSerializer()
     pp = pprint.PrettyPrinter()
 
-    static_info, _ = serializer.load_static_info_from_csv(
-        args.start_from, return_key="style_id"
-    )
-    if args.style_id in static_info:
-        static_item = static_info[args.style_id]
-        print(static_item)
-
-        if args.mode == "getraw":
-            product_detail_response = feed.get_details_from_product_id_raw(
-                static_item.product_id
-            )
-            details_obj = json.loads(product_detail_response)
-            pp.pprint(details_obj)
-
-            recentsales_list_response = feed.get_transactions_from_product_id_raw(
-                static_item.product_id
-            )
-            transaction_obj = json.loads(recentsales_list_response)
-            pp.pprint(transaction_obj)
-        elif args.mode == "gets":
-            size_prices, gender = feed.get_size_prices_from_product_id(static_item.product_id)
-            print(size_prices)
-            print(gender)
-            max_page = (
-                int(args.transaction_history_maxpage)
-                if args.transaction_history_maxpage
-                else 0
-            )
-            up_to_time = (
-                datetime.datetime.strptime(
-                    args.transaction_history_date, "%Y%m%d"
-                )
-                if args.transaction_history_date
-                else None
-            )
-            transactions = feed.get_historical_transactions(
-                static_item.product_id, gender, max_page=max_page, up_to_time=up_to_time
-            )
-            for t in transactions:
-                print(t)
-    else:
-        print(
-            "cannot find product info for {} from {}".format(
-                args.style_id, args.start_from
-            )
+    if args.style_id:
+        static_info, _ = serializer.load_static_info_from_csv(
+            args.start_from, return_key="style_id"
         )
+        if not args.style_id in static_info:
+            print(
+                "cannot find product info for {} from {}".format(
+                    args.style_id, args.start_from
+                )
+            )
+            return
+        else:
+            static_item = static_info[args.style_id]
+            print(static_item)
+            product_id = static_item.product_id
+    elif args.product_id:
+        product_id = args.product_id
 
+    if args.mode == "getraw":
+        product_detail_response = feed.get_details_from_product_id_raw(
+            product_id
+        )
+        details_obj = json.loads(product_detail_response)
+        pp.pprint(details_obj)
+
+        recentsales_list_response = feed.get_transactions_from_product_id_raw(
+            product_id
+        )
+        transaction_obj = json.loads(recentsales_list_response)
+        pp.pprint(transaction_obj)
+    elif args.mode == "gets":
+        size_prices, gender = feed.get_size_prices_from_product_id(product_id)
+        pp.pprint(size_prices)
+        print(gender)
+        max_page = (
+            int(args.transaction_history_maxpage)
+            if args.transaction_history_maxpage
+            else 0
+        )
+        up_to_time = (
+            datetime.datetime.strptime(
+                args.transaction_history_date, "%Y%m%d"
+            )
+            if args.transaction_history_date
+            else None
+        )
+        transactions = feed.get_historical_transactions(
+            product_id, gender, max_page=max_page, up_to_time=up_to_time
+        )
+        for t in transactions:
+            print(t)
+        if args.plot_size:
+            reversed_t = transactions[::-1]
+            for t in reversed_t:
+                t.size = t.size.strip().strip('Y')
+
+            x = np.array([datetime.datetime.strptime(t.time, "%Y-%m-%dT%H:%M:%S.%fZ") for t in reversed_t if float(t.size) == float(args.plot_size)])
+            y = np.array([(t.price / 100) for t in reversed_t if float(t.size) == float(args.plot_size)])
+
+            if len(x) > 0:
+                months = mdates.MonthLocator()  # every month
+                year_month_fmt = mdates.DateFormatter('%Y%m')
+
+                fig, ax = plt.subplots()
+
+                ax.plot(x, y)
+                # format the ticks
+                ax.xaxis.set_major_locator(months)
+                ax.xaxis.set_major_formatter(year_month_fmt)
+
+                # round to nearest months.
+                datemin = np.datetime64(x[0], 'm')
+                datemax = np.datetime64(x[-1], 'm') + np.timedelta64(1, 'm')
+                ax.set_xlim(datemin, datemax)
+
+                # format the coords message box
+                ax.format_xdata = mdates.DateFormatter('%Y-%m-%d')
+                ax.format_ydata = lambda x: '$%1.2f' % x  # format the price.
+                ax.grid(True)
+
+                # rotates and right aligns the x labels, and moves the bottom of the
+                # axes up to make room for them
+                fig.autofmt_xdate()
+                if args.style_id:
+                    fig_filename = "{}.{}.png".format(args.style_id, args.plot_size)
+                elif args.product_id:
+                    fig_filename = "{}.{}.png".format(args.product_id, args.plot_size)
+                fig.suptitle(fig_filename)
+                plt.savefig(fig_filename)
+                print("historical transaction figure saved to {}".format(fig_filename))
+
+                plt.show()            
+            else:
+                print("no historical transactions found for {} {}".format(args.style_id, args.plot_size))
+            
 
 if __name__ == "__main__":
     args = parse_args()
@@ -384,8 +449,8 @@ if __name__ == "__main__":
     elif args.mode == "getraw" or args.mode == "gets":
         if not args.start_from:
             raise RuntimeError("args.start_from is required in get modes")
-        if not args.style_id:
-            raise RuntimeError("args.style_id is required in get modes")
+        if not args.style_id and not args.product_id:
+            raise RuntimeError("one among args.style_id and args.product_id is required in get modes")
         get_mode(args)
     else:
         raise RuntimeError("Unsupported mode {}".format(args.mode))
