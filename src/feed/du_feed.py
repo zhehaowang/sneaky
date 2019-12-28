@@ -284,7 +284,7 @@ def update_mode(args):
                 )
                 up_to_time = (
                     datetime.datetime.strptime(
-                        args.transaction_history_date, "%Y-%m-%d"
+                        args.transaction_history_date, "%Y%m%d"
                     )
                     if args.transaction_history_date
                     else None

@@ -45,7 +45,7 @@ class LastUpdatedSerializer:
                         except ValueError:
                             self.last_updated[style_id][
                                 self.columns[i]
-                            ] = datetime.datetime.strptime(row[i + 1], "%Y%m%d-%H%M%S")
+                            ] = datetime.datetime.strptime(row[i + 1], "%Y-%m-%dT%H:%M:%SZ")
 
     def update_last_updated(self, style_id, venue):
         if style_id not in self.last_updated:
@@ -59,7 +59,6 @@ class LastUpdatedSerializer:
         else:
             if style_id in self.last_updated and venue in self.last_updated[style_id]:
                 now = datetime.datetime.utcnow()
-                last_update = time.time()
                 last_update = self.last_updated[style_id][venue]
                 return (now - last_update).total_seconds() > self.min_update_time
             else:

@@ -110,7 +110,8 @@ class Sizer:
         return
 
     def populate_reverse_mapping(self):
-        for key in self.mapping:
+        current_keys = list(self.mapping.keys())
+        for key in current_keys:
             gender, in_metric, out_metric = key
             reverse_key = (gender, out_metric, in_metric)
             self.mapping[reverse_key] = {}
@@ -119,12 +120,16 @@ class Sizer:
         return
 
     def _in_out_code_to_key(self, in_code, out_code):
+        """
+        @return ('nike-women', 'eu', 'us')
+        """
         in_metric, in_venue, in_gender = in_code.split("-")
         key = (in_venue + "-" + in_gender, in_metric, out_code)
-        return key, in_metric
+        return key
 
     def get_shoe_size(self, in_size, in_code, out_code):
-        map_key, in_metric = self._in_out_code_to_key(in_code, out_code)
+        map_key = self._in_out_code_to_key(in_code, out_code)
+        in_metric = map_key[1]
         if in_metric == out_code:
             return in_size
         if map_key not in self.mapping:
