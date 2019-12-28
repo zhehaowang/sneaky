@@ -15,7 +15,7 @@ class ResultSerializer:
         self.sizer = Sizer()
         return
 
-    def get_annotation_str(self, annotation):
+    def get_annotation_str(self, annotation, style_id, size):
         return_str = ""
         for source in ["bid", "mid", "ask"]:
             for dest in ["listing", "last"]:
@@ -29,6 +29,29 @@ class ResultSerializer:
                     return_str += "  profit value ({} to {}): {:.2f} USD\n".format(
                         source, dest, annotation[option_name]
                     )
+        if "du_analyzer" in annotation:
+            stats = annotation["du_analyzer"]
+            return_str += "  Du Transactions:\n" \
+                          "    First Date:       {}\n" \
+                          "    Number of Sales:  {}\n" \
+                          "    Sales / Day:      {:.2f}\n" \
+                          "    High:             {:.2f} CNY {:.2f} USD\n" \
+                          "    Low:              {:.2f} CNY {:.2f} USD\n" \
+                          "    First:            {:.2f} CNY {:.2f} USD\n" \
+                          "    Last:             {:.2f} CNY {:.2f} USD\n" \
+                          "    Average:          {:.2f} CNY {:.2f} USD\n" \
+                          "    Stdev:            {:.2f} CNY {:.2f} USD\n" \
+                          "  Plot command: {}\n".format(
+                            stats["first_date"].isoformat(),
+                            stats["num_sales"],
+                            stats["sales_per_day"],
+                            stats["high"], self.fx_rate.get_spot_fx(stats["high"], "CNY", "USD"),
+                            stats["low"], self.fx_rate.get_spot_fx(stats["low"], "CNY", "USD"),
+                            stats["first"], self.fx_rate.get_spot_fx(stats["first"], "CNY", "USD"),
+                            stats["last"], self.fx_rate.get_spot_fx(stats["last"], "CNY", "USD"),
+                            stats["avg"], self.fx_rate.get_spot_fx(stats["avg"], "CNY", "USD"),
+                            stats["stdev"], self.fx_rate.get_spot_fx(stats["stdev"], "CNY", "USD"),
+                            "./du_analyzer.py --style_id {} --size {} --mode plot".format(style_id, size))
         return return_str
 
     def to_str(self, sorted_size_prices, static_info, static_info_extras):
@@ -49,7 +72,7 @@ class ResultSerializer:
             try:
                 chinese_size = self.sizer.get_shoe_size(size, item.gender.replace("eu", "us"), "eu")
                 print(
-                    "{} {} {}\n{} , {}\n{}".format(
+                    "{} {} {}\n{} , {}\nRelease date:           {}".format(
                         style_id,
                         size,
                         chinese_size,
@@ -80,7 +103,7 @@ class ResultSerializer:
                         data["stockx"]["prices"][0]["annual_low"],
                         data["stockx"]["prices"][0]["volatility"],
                         data["stockx"]["prices"][0]["sale_72_hours"],
-                        self.get_annotation_str(data["annotation"]),
+                        self.get_annotation_str(data["annotation"], style_id, size),
                     )
                 )
             except SizerError:

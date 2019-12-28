@@ -14,7 +14,7 @@ from time_series_serializer import TimeSeriesSerializer
 from fees import Fees
 from fx_rate import FxRate
 from result_serializer import ResultSerializer
-
+from du_analyzer import ItemAnalyzer
 
 class Strategy:
     def __init__(self, fees_file, fx_rate):
@@ -22,6 +22,7 @@ class Strategy:
         self.fees = Fees(fees_file, fx_rate)
         self.fx_rate = fx_rate
         self.serializer = ResultSerializer(self.fees, self.fx_rate)
+        self.analyzer = ItemAnalyzer()
         return
 
     def load_static_info(self, static_info_file):
@@ -220,6 +221,12 @@ class Strategy:
                                 options[option_name],
                             )
                         )
+
+        # attach analytics
+        if options["generate_du_historical_stats"]:
+            for k in size_prices_profit_cutoff:
+                transactions = ItemAnalyzer.to_ordered_sale_record(size_prices_profit_cutoff[k]["du"]["transactions"])
+                size_prices_profit_cutoff[k]["annotation"]["du_analyzer"] = self.analyzer.get_historical_transactions_stats(transactions)
 
         # sort
         result_array = [
