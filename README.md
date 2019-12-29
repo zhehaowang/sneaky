@@ -14,7 +14,7 @@ For research / study purposes only.
   * Scrapes venues for current price listing and historical transactions.
   * Three main modes of operation:
     * **Query**: given search terms, scrape models on a venue, record static information (e.g. style ID, title, release date, product ID / URL query key on the venue, __feed/static_info_serializer.py__).
-    * Update: given static info produced by query, dump current price readings and transactions since the last update to local file system (__feed/time_series_serializer.py__).
+    * **Update**: given static info produced by query, dump current price readings and transactions since the last update to local file system (__feed/time_series_serializer.py__).
     * **Study**: given style ID and size, query a venue for current listing prices and historical transactions data.
   * Venues:
     * **Du** (__feed/du_feed.py__, fully implemented): scrapes Du WeChat app for product detail and transaction history.
