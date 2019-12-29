@@ -178,6 +178,7 @@ Some interesting items:
 ### Credits
 
 * [Unofficial NodeJS stockx API](https://github.com/matthew1232/stockx-api)
+* [Unofficial Python stockx API](https://pypi.org/project/stockx-py-sdk/) (in v1)
 * [Du app sign mechanism](https://github.com/luo1994/du-app-sign)
 
 ### Contact
