@@ -167,7 +167,7 @@ And price, transaction readings.
 
 Tracked in [issues](https://github.com/zhehaowang/sneaky/issues).
 Some interesting items:
-* [My take on the venue du](https://github.com/zhehaowang/sneaky/issues/55)
+* [My take on trading sneakers on du](https://github.com/zhehaowang/sneaky/issues/55)
 * [Post-mortem on one item we bought](https://github.com/zhehaowang/sneaky/issues/54)
 * [Engineering realizations](https://github.com/zhehaowang/sneaky/issues/56)
 
