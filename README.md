@@ -173,7 +173,7 @@ Some interesting items:
 
 ### [Playbook](docs/playbook.md)
 
-### License: GNU General Public License v3.0
+### License: GNU Lesser General Public License v3.0
 
 ### Credits
 
