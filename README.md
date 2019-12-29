@@ -111,6 +111,58 @@ Analytics produce stats and historical transaction prices plot.
 
 ![Historical transaction prices](docs/BQ6623-800.9.5.png)
 
+Feed gathers static product details.
+```
+| style_id   | du_product_id | du_title                                       | release_date | stockx_gender | stockx_url_key                            | stockx_retail_price |
+| ---------- | ------------- | ---------------------------------------------- | ------------ | ------------- | ----------------------------------------- | ------------------- |
+| 308243-142 |         1,210 | Air Jordan 12 Retro White Univ Blue (2004) 女款  | 2004.02.14   | women         | jordan-12-retro-white-univ-blue-2004-gs   |                 135 |
+| 553560-125 |        56,086 | 【吴亦凡同款】Air Jordan 1 Low Court Purple (GS) 黑紫脚趾 | 2019.04      | child         | nike-air-air-jordan-1-low-court-purple-gs |                  75 |
+| 834011-141 |         4,018 | Air Jordan 16 OG Midnight Navy (GS)            | 2001.03.24   | child         | air-jordan-16-og-midnight-navy-gs         |                 250 |
+```
+
+And price, transaction readings.
+```
+{
+  "du": {
+    "prices": [
+      {
+        "time": "20191225-210334",
+        "bid_price": 211900,
+        "ask_price": null
+      },
+      ...
+    ],
+    "transactions": [
+      {
+        "price": 336900,
+        "time": "2019-11-07T21:03:34.791482",
+        "id": "ada3faa5c5f8ed86ff12dfe2a16fd482"
+      },
+      {
+        "price": 329900,
+        "time": "2019-10-26T21:03:34.791569",
+        "id": "4d95b696577b974a965a1ced6f1bd397"
+      },
+      ...
+    ]
+  },
+  "stockx": {
+    "prices": [
+      {
+        "time": "2019-12-27T02:41:39.802Z",
+        "bid_price": 277,
+        "ask_price": 450,
+        "annual_high": 420,
+        "annual_low": 245,
+        "volatility": 0.105128,
+        "sale_72_hours": 0
+      },
+      ...
+    ]
+  }
+}
+```
+
 ### Lessons, progress, and TODO
 
 Tracked in [issues](https://github.com/zhehaowang/sneaky/issues).
