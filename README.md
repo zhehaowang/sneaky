@@ -6,6 +6,8 @@ Can we make money by buying sneakers low on one platform and selling high on ano
 
 Sneaky系统从多个平台 (毒app，StockX) 抓取球鞋价格数据、存储，并决定哪些款式有合适的价差、volatility、volume，提供倒卖建议。
 
+For research / study purposes only.
+
 ### What to expect
 
 * Feed
