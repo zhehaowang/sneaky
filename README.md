@@ -30,7 +30,7 @@ For research / study purposes only.
 * Model of operation
   * Run query every month / year to account for new releases and potential changes in (StyleID, platform-specific ID) map.
   * After scraping static info from multiple venues, run a join to produce items for which we have data on multiple venues (__feed/csv_merge.py__)
-  * Run update every day to produce a sample of today's prices and record transactions since yesterday.
+  * Cron update everyday to produce a sample of today's prices and record transactions since yesterday.
   * Run strategy whenever you want to see its recommendations based off of currently recorded readings.
   * Before making a purchase, run analytics to double check its volume, volatility and historical transaction prices.
 
@@ -67,7 +67,7 @@ For research / study purposes only.
 # plot Du historical transaction prices
 ./du_analyzer.py --style_id 881426-009 --size 7.0 --mode plot
 
-# product Du historical transaction statistics
+# produce Du historical transaction statistics
 ./du_analyzer.py --style_id 881426-009 --size 7.0 --mode stats
 ```
 
